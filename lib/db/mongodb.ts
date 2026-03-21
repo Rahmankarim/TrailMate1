@@ -1,34 +1,41 @@
-import { MongoClient, type Db } from "mongodb"
+import { MongoClient, type Db, type Document } from "mongodb"
 
-if (!process.env.MONGODB_URI) {
-  throw new Error("Please define the MONGODB_URI environment variable")
-}
-
-const uri = process.env.MONGODB_URI
 const options = {}
 
-let client: MongoClient
-let clientPromise: Promise<MongoClient>
+let clientPromise: Promise<MongoClient> | undefined
 
 declare global {
   var _mongoClientPromise: Promise<MongoClient> | undefined
 }
 
-if (process.env.NODE_ENV === "development") {
-  // In development, use a global variable to preserve the client across hot reloads
-  if (!global._mongoClientPromise) {
-    client = new MongoClient(uri, options)
-    global._mongoClientPromise = client.connect()
+function getMongoClientPromise(): Promise<MongoClient> {
+  if (clientPromise) {
+    return clientPromise
   }
-  clientPromise = global._mongoClientPromise
-} else {
-  // In production, create a new client
-  client = new MongoClient(uri, options)
-  clientPromise = client.connect()
+
+  const uri = process.env.MONGODB_URI
+  if (!uri) {
+    throw new Error("Please define the MONGODB_URI environment variable")
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    // In development, preserve the client promise across hot reloads.
+    if (!global._mongoClientPromise) {
+      const client = new MongoClient(uri, options)
+      global._mongoClientPromise = client.connect()
+    }
+    clientPromise = global._mongoClientPromise
+  } else {
+    // In production, create one client promise per process.
+    const client = new MongoClient(uri, options)
+    clientPromise = client.connect()
+  }
+
+  return clientPromise
 }
 
 export async function getDatabase(): Promise<Db> {
-  const client = await clientPromise
+  const client = await getMongoClientPromise()
   return client.db()
 }
 
@@ -37,4 +44,4 @@ export async function getCollection<T extends Document>(collectionName: string) 
   return db.collection<T>(collectionName)
 }
 
-export default clientPromise
+export default getMongoClientPromise
