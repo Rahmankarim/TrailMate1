@@ -1,0 +1,37 @@
+import type React from "react"
+import type { Metadata } from "next"
+import { DM_Sans } from "next/font/google"
+import "./globals.css"
+import ConditionalLayout from "@/components/layout/conditional-layout"
+import { ScrollToTop } from "@/components/scroll-to-top"
+import { AuthProvider } from "@/contexts/auth-context"
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-dm-sans",
+})
+
+export const metadata: Metadata = {
+  title: "TrailMate - Your AI Adventure Partner",
+  description:
+    "Connect with eco-conscious adventurers and discover sustainable travel experiences with AI-powered companion matching.",
+  generator: "TrailMate",
+}
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode
+}>) {
+  return (
+    <html lang="en" className={dmSans.variable}>
+      <body className="font-sans antialiased" suppressHydrationWarning>
+        <AuthProvider>
+          <ScrollToTop />
+          <ConditionalLayout>{children}</ConditionalLayout>
+        </AuthProvider>
+      </body>
+    </html>
+  )
+}
