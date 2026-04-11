@@ -273,8 +273,10 @@ export default function HomePage() {
 
       <Button
         onClick={toggleMute}
-        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-foreground hover:bg-foreground/90 text-background shadow-lg transition-all duration-300 hover:scale-110"
+        className="fixed bottom-5 right-20 z-50 h-14 w-14 rounded-full bg-foreground text-background shadow-lg transition-all duration-300 hover:scale-110 hover:bg-foreground/90"
         size="sm"
+        aria-label={isMuted ? "Play background music" : "Pause background music"}
+        title={isMuted ? "Play background music" : "Pause background music"}
       >
         {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
       </Button>

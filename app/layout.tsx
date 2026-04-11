@@ -5,6 +5,7 @@ import "./globals.css"
 import ConditionalLayout from "@/components/layout/conditional-layout"
 import { ScrollToTop } from "@/components/scroll-to-top"
 import { AuthProvider } from "@/contexts/auth-context"
+import { TrailMateChatbot } from "@/components/chatbot/trailmate-chatbot"
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -30,6 +31,7 @@ export default function RootLayout({
         <AuthProvider>
           <ScrollToTop />
           <ConditionalLayout>{children}</ConditionalLayout>
+          <TrailMateChatbot />
         </AuthProvider>
       </body>
     </html>
