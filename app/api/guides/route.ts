@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const userOnly = searchParams.get("userOnly") === "true"
+    const userId = searchParams.get("userId")
     const published = searchParams.get("published") !== "false"
     const paginate = searchParams.get("paginate") !== "false"
     const search = searchParams.get("search")
@@ -42,6 +43,11 @@ export async function GET(request: NextRequest) {
       }
 
       query.userId = new ObjectId(payload.userId)
+    } else if (userId) {
+      if (!ObjectId.isValid(userId)) {
+        return NextResponse.json(createErrorResponse("Invalid userId", 400), { status: 400 })
+      }
+      query.userId = new ObjectId(userId)
     } else if (published) {
       query.isPublished = true
     }
@@ -97,19 +103,66 @@ export async function GET(request: NextRequest) {
         .limit(limit)
         .toArray()
 
+      const userIds = guides
+        .map((guide: any) => guide.userId)
+        .filter((id: any) => id && ObjectId.isValid(id.toString()))
+        .map((id: any) => new ObjectId(id.toString()))
+
+      const usersById = new Map<string, any>()
+      if (userIds.length) {
+        const users = await db
+          .collection("users")
+          .find({ _id: { $in: userIds } }, { projection: { _id: 1, avatar: 1, profileImage: 1 } })
+          .toArray()
+        users.forEach((user: any) => usersById.set(user._id.toString(), user))
+      }
+
+      const guidesWithAvatar = guides.map((guide: any) => {
+        const user = usersById.get(guide.userId?.toString())
+        return {
+          ...guide,
+          avatar: guide.avatar || user?.avatar || undefined,
+          profileImage: guide.profileImage || user?.profileImage || guide.avatar || user?.avatar || undefined,
+        }
+      })
+
       console.log(`Found ${guides.length} guides (page ${page}, total ${totalCount})`)
 
       const response = createPaginatedResponse(guides, totalCount, page, limit)
       return NextResponse.json({
         success: true,
-        guides: response.data,
+        guides: guidesWithAvatar,
         pagination: response.pagination
       })
     } else {
       const guides = await collection.find(query).sort(sortOptions).toArray()
+
+      const userIds = guides
+        .map((guide: any) => guide.userId)
+        .filter((id: any) => id && ObjectId.isValid(id.toString()))
+        .map((id: any) => new ObjectId(id.toString()))
+
+      const usersById = new Map<string, any>()
+      if (userIds.length) {
+        const users = await db
+          .collection("users")
+          .find({ _id: { $in: userIds } }, { projection: { _id: 1, avatar: 1, profileImage: 1 } })
+          .toArray()
+        users.forEach((user: any) => usersById.set(user._id.toString(), user))
+      }
+
+      const guidesWithAvatar = guides.map((guide: any) => {
+        const user = usersById.get(guide.userId?.toString())
+        return {
+          ...guide,
+          avatar: guide.avatar || user?.avatar || undefined,
+          profileImage: guide.profileImage || user?.profileImage || guide.avatar || user?.avatar || undefined,
+        }
+      })
+
       console.log(`Found ${guides.length} guides`)
 
-      return NextResponse.json({ success: true, guides })
+      return NextResponse.json({ success: true, guides: guidesWithAvatar })
     }
   } catch (error) {
     console.error("Error fetching guides:", error)

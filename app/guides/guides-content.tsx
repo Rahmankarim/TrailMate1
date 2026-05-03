@@ -23,6 +23,9 @@ interface Guide {
   reviewCount: number
   totalTours: number
   avatar?: string
+  profileImage?: string
+  image?: string
+  updatedAt?: string
   isVerified: boolean
   isPublished: boolean
 }
@@ -39,10 +42,9 @@ export function GuidesContent() {
   useEffect(() => {
     async function fetchGuides() {
       try {
-        const response = await fetch("/api/guides")
+        const response = await fetch("/api/guides", { cache: "no-store" })
         if (response.ok) {
           const data = await response.json()
-          console.log('Guides API Response:', data)
           if (data.success && data.guides) {
             setGuides(data.guides)
           }
@@ -223,12 +225,18 @@ export function GuidesContent() {
 }
 
 function GuideCard({ guide }: { guide: Guide }) {
+  const imageSource = guide.avatar || guide.profileImage || guide.image || "/placeholder.svg"
+  const isInlineOrBlobImage = imageSource.startsWith("data:") || imageSource.startsWith("blob:")
+  const imageWithVersion = imageSource.includes("?") || isInlineOrBlobImage
+    ? imageSource
+    : `${imageSource}?v=${encodeURIComponent(guide.updatedAt || guide._id)}`
+
   return (
     <Card className="overflow-hidden border-border hover:shadow-xl hover:-translate-y-2 transition-all duration-500">
       <CardContent className="p-6">
         <div className="flex items-start gap-4 mb-4">
           <Avatar className="h-20 w-20 border-2 border-border">
-            <AvatarImage src={guide.profileImage || guide.avatar || guide.image || "/placeholder.svg"} alt={guide.name} />
+            <AvatarImage src={imageWithVersion} alt={guide.name} />
             <AvatarFallback>
               {guide.name
                 .split(" ")

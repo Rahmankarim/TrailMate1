@@ -52,7 +52,6 @@ export default function TravelerBookingsPage() {
   const { user, isLoading: authLoading } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
-  const [bookings, setBookings] = useState<Booking[]>([])
   const [destinationBookings, setDestinationBookings] = useState<Booking[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [paymentOpen, setPaymentOpen] = useState(false)
@@ -83,26 +82,9 @@ export default function TravelerBookingsPage() {
 
   useEffect(() => {
     if (user) {
-      fetchBookings()
       fetchDestinationBookings()
     }
   }, [user])
-
-  const fetchBookings = async () => {
-    try {
-      const res = await fetch("/api/bookings?type=user", {
-        credentials: "include",
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setBookings(data.bookings || [])
-      }
-    } catch (error) {
-      console.error("Error fetching bookings:", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   const fetchDestinationBookings = async () => {
     try {
@@ -115,6 +97,8 @@ export default function TravelerBookingsPage() {
       }
     } catch (error) {
       console.error("Error fetching destination bookings:", error)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -207,7 +191,6 @@ export default function TravelerBookingsPage() {
       setPaymentOpen(false)
       setScreenshot(null)
       setScreenshotFile(null)
-      fetchBookings()
       fetchDestinationBookings()
     } catch (error) {
       console.error("Payment error:", error)
@@ -235,7 +218,7 @@ export default function TravelerBookingsPage() {
           title: "Booking Cancelled",
           description: "Your booking has been cancelled successfully."
         })
-        fetchBookings()
+        fetchDestinationBookings()
       }
     } catch (error) {
       console.error("Error cancelling booking:", error)
@@ -265,7 +248,6 @@ export default function TravelerBookingsPage() {
         title: "Booking Completed",
         description: "Your booking has been moved to completed bookings."
       })
-      fetchBookings()
       fetchDestinationBookings()
     } catch (error) {
       console.error("Error completing booking:", error)
@@ -316,9 +298,9 @@ export default function TravelerBookingsPage() {
     )
   }
 
-  const pendingBookings = bookings.filter(b => b.status === "pending")
-  const confirmedBookings = bookings.filter(b => b.status === "confirmed")
-  const completedBookings = bookings.filter(b => b.status === "completed")
+  const pendingBookings = destinationBookings.filter(b => b.status === "pending")
+  const confirmedBookings = destinationBookings.filter(b => b.status === "confirmed")
+  const completedBookings = destinationBookings.filter(b => b.status === "completed")
 
   // Don't render if not a user/traveler
   if (user && user.role !== "traveler") {
@@ -340,7 +322,7 @@ export default function TravelerBookingsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Total Bookings</p>
-                    <p className="text-2xl font-bold text-foreground mt-1">{bookings.length}</p>
+                    <p className="text-2xl font-bold text-foreground mt-1">{destinationBookings.length}</p>
                   </div>
                   <Calendar className="h-8 w-8 text-muted-foreground" />
                 </div>
@@ -380,207 +362,6 @@ export default function TravelerBookingsPage() {
               </CardContent>
             </Card>
           </div>
-
-          {/* Pending Requests */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Pending Requests</CardTitle>
-              <CardDescription>Awaiting guide confirmation</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {pendingBookings.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No pending requests</p>
-                </div>
-              ) : (
-                pendingBookings.map((booking) => (
-                  <div key={booking._id} className="p-4 rounded-xl border border-border hover:bg-accent transition-colors">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback>
-                            {booking.guideName.split(" ").map(n => n[0]).join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium text-foreground">{booking.guideName}</p>
-                          <p className="text-sm text-muted-foreground">{booking.destination?.name || "Custom Tour"}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Badge className={getStatusBadge(booking.status)}>{booking.status}</Badge>
-                        {booking.paymentStatus && (
-                          <Badge className={getPaymentBadge(booking.paymentStatus)}>
-                            {booking.paymentStatus === "unpaid" ? "Not Paid" : booking.paymentStatus}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        <span>{formatDate(booking.startDate, booking.endDate)}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        <span>{booking.guests} guest{booking.guests > 1 ? "s" : ""}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="h-4 w-4" />
-                        <span className="font-semibold text-foreground">${booking.totalPrice}</span>
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-destructive border-destructive hover:bg-destructive/10"
-                      onClick={() => handleCancelBooking(booking._id)}
-                    >
-                      <XCircle className="h-4 w-4 mr-1" />
-                      Cancel Request
-                    </Button>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Confirmed Tours - Awaiting Payment */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Confirmed Tours</CardTitle>
-              <CardDescription>Complete payment to finalize your booking</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {confirmedBookings.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <CheckCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No confirmed tours</p>
-                </div>
-              ) : (
-                confirmedBookings.map((booking) => (
-                  <div key={booking._id} className="p-4 rounded-xl border border-border bg-blue-500/5">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback>
-                            {booking.guideName.split(" ").map(n => n[0]).join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium text-foreground">{booking.guideName}</p>
-                          <p className="text-sm text-muted-foreground">{booking.destination?.name || "Custom Tour"}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Badge className={getStatusBadge(booking.status)}>{booking.status}</Badge>
-                        {booking.paymentStatus && (
-                          <Badge className={getPaymentBadge(booking.paymentStatus)}>
-                            {booking.paymentStatus === "unpaid" ? "Not Paid" : booking.paymentStatus}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        <span>{formatDate(booking.startDate, booking.endDate)}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        <span>{booking.guests} guest{booking.guests > 1 ? "s" : ""}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="h-4 w-4" />
-                        <span className="font-bold text-lg text-foreground">${booking.totalPrice}</span>
-                      </div>
-                    </div>
-                    {booking.paymentStatus === "unpaid" && (
-                      <Button
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                        onClick={() => handleProceedToPayment(booking)}
-                      >
-                        <CreditCard className="h-4 w-4 mr-2" />
-                        Proceed to Payment - ${booking.totalPrice}
-                      </Button>
-                    )}
-                    {booking.paymentStatus === "pending" && (
-                      <div className="p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                        <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
-                          <Clock className="h-4 w-4" />
-                          Payment proof submitted. Waiting for guide verification.
-                        </p>
-                      </div>
-                    )}
-                    {booking.paymentStatus === "paid" && (
-                      <div className="space-y-3">
-                        <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
-                          <p className="text-sm font-medium text-green-800 dark:text-green-200 flex items-center gap-2">
-                            <CheckCircle className="h-4 w-4" />
-                            Payment verified and confirmed
-                          </p>
-                        </div>
-                        {canMarkComplete(booking) ? (
-                          <Button
-                            className="w-full bg-green-600 hover:bg-green-700 text-white"
-                            onClick={() => handleCompleteBooking(booking._id)}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Mark as Complete
-                          </Button>
-                        ) : (
-                          <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-                            <p className="text-sm font-medium text-blue-800 dark:text-blue-200 flex items-center gap-2">
-                              <Clock className="h-4 w-4" />
-                              This booking will be completed after the trip end date.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Completed Tours */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Completed Tours</CardTitle>
-              <CardDescription>Your tour history</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {completedBookings.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No completed tours yet</p>
-                </div>
-              ) : (
-                completedBookings.slice(0, 5).map((booking) => (
-                  <div key={booking._id} className="p-4 rounded-xl border border-border bg-green-500/5">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback>
-                            {booking.guideName.split(" ").map(n => n[0]).join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium text-foreground">{booking.guideName}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {formatDate(booking.startDate, booking.endDate)}
-                          </p>
-                        </div>
-                      </div>
-                      <Badge className={getStatusBadge(booking.status)}>Completed</Badge>
-                    </div>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
 
           {/* Destination Bookings - Pending */}
           <Card>

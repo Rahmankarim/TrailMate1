@@ -6,7 +6,8 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "eslint .",
-    "start": "next start"
+    "start": "next start",
+    "train:grok": "node lib/ai/fine-tune-grok.mjs"
   },
   "dependencies": {
     "@aws-sdk/credential-providers": "latest",
@@ -75,6 +76,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.9",
     "@types/node": "^22",
+    "@types/jest": "^29.5.3",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "postcss": "^8.5",

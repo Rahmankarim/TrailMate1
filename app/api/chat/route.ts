@@ -3,6 +3,10 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyAccessToken, type UserRole } from '@/lib/auth/jwt'
 import { getOrCreateChatSession, saveChatSession } from '@/lib/chat/session-store'
+import { generateContextualTravelResponse, buildTrailMateSystemPrompt } from '@/lib/chat/llm-provider'
+import { getDatabase } from '@/lib/db/mongodb'
+import { matchGuidesForTraveler, getTopMatchingGuides } from '@/lib/utils/guide-matching'
+import { ObjectId } from 'mongodb'
 import type {
   ChatAction,
   ChatCard,
@@ -13,6 +17,23 @@ import type {
 } from '@/lib/chat/types'
 
 type JsonRecord = Record<string, any>
+
+type TripContext = {
+  destination: string
+  days?: number
+  interests: string[]
+  budget?: string
+  month?: string
+  hotelPreference?: string
+}
+
+type TripDetails = {
+  days?: number
+  interests: string[]
+  budget?: string
+  month?: string
+  hotelPreference?: string
+}
 
 function asRole(role: UserRole): TrailMateRole {
   return role
@@ -214,6 +235,138 @@ function isGeneralConversation(text: string) {
   return generalPrompts.test(input) || questionEnds
 }
 
+function isAffirmativeFollowUp(text: string) {
+  return /^(yes|ye|yep|yeah|sure|ok|okay|continue|more|go on|please do|sounds good)$/i.test(text.trim())
+}
+
+function extractTripDetails(text: string): TripDetails {
+  const normalized = normalizeText(text)
+  const dayMatch = normalized.match(/\b(\d+)\s*(day|days)\b/)
+  const budgetMatch = normalized.match(/\b(budget|under|around|below)\s*(?:rs\.?|pkr)?\s*(\d+(?:,\d{3})*(?:\.\d+)?)\b/)
+  const monthMatch = normalized.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\b/)
+  const hotelPreferenceMatch = normalized.match(/\b(luxury|budget|mid[-\s]?range|guesthouse|hotel|resort|camping|homestay|family)/)
+  const interests = [
+    /\b(hiking|trekking|trek|mountaineering)\b/.test(normalized) ? 'hiking' : null,
+    /\b(culture|cultural|history|heritage)\b/.test(normalized) ? 'culture' : null,
+    /\b(photography|photo|pictures)\b/.test(normalized) ? 'photography' : null,
+    /\b(adventure|adventurous)\b/.test(normalized) ? 'adventure' : null,
+    /\b(relax|relaxation|easy)\b/.test(normalized) ? 'relaxation' : null,
+  ].filter(Boolean) as string[]
+
+  return {
+    days: dayMatch ? Number(dayMatch[1]) : undefined,
+    interests,
+    budget: budgetMatch ? `${budgetMatch[1]} ${budgetMatch[2]}` : undefined,
+    month: monthMatch?.[1],
+    hotelPreference: hotelPreferenceMatch?.[1],
+  }
+}
+
+function extractTripContext(text: string): TripContext | null {
+  const normalized = normalizeText(text)
+  const destinationMatch = normalized.match(/\b(hunza|skardu|fairy meadows|lahore|islamabad)\b/)
+  if (!destinationMatch) return null
+
+  const details = extractTripDetails(text)
+
+  return {
+    destination: destinationMatch[1],
+    ...details,
+  }
+}
+
+function buildDayByDayItinerary(context: TripContext): string {
+  const destination = context.destination
+  const days = Math.max(3, Math.min(context.days || 5, 10))
+  const interests = context.interests.join(', ')
+  const extraDetails = [
+    context.month ? `travel month: ${context.month}` : null,
+    context.budget ? `budget: ${context.budget}` : null,
+    context.hotelPreference ? `stay preference: ${context.hotelPreference}` : null,
+  ].filter(Boolean)
+
+  if (destination === 'hunza') {
+    const itineraryDays = [
+      'Day 1: Arrive in Gilgit and transfer to Karimabad. Settle in, rest, and enjoy a sunset viewpoint.',
+      'Day 2: Explore Baltit Fort, Altit Fort, and Karimabad bazaar, then a cultural dinner.',
+      'Day 3: Visit Attabad Lake, the suspension bridge, and nearby scenic spots.',
+      'Day 4: Hiking day for Passu Cones, Borith Lake, or Hopper Glacier depending on fitness.',
+      'Day 5: Sunrise at Eagle\'s Nest and a relaxed village walk or photography stop.',
+      'Day 6: Optional longer hike or a full-day excursion to Khunjerab route viewpoints.',
+      'Day 7: Slow breakfast, souvenir stop, and departure back to Gilgit.',
+    ]
+
+    if (days <= 5) {
+      itineraryDays.splice(5)
+    }
+    if (days === 6) {
+      itineraryDays.splice(6)
+    }
+
+    return [
+      `I planned a ${days}-day Hunza trip${interests ? ` focused on ${interests}` : ''}.`,
+      ...extraDetails.length ? [`Trip details: ${extraDetails.join(', ')}.`] : [],
+      ...itineraryDays.slice(0, days).map(line => `- ${line}`),
+      'If you want, I can also turn this into a hotel + guide + budget plan.',
+    ].join('\n')
+  }
+
+  if (destination === 'skardu') {
+    return [
+      `I planned a ${days}-day Skardu trip${interests ? ` focused on ${interests}` : ''}.`,
+      ...extraDetails.length ? [`Trip details: ${extraDetails.join(', ')}.`] : [],
+      '- Day 1: Arrive in Skardu and relax around the city viewpoint.',
+      '- Day 2: Satpara Lake, Manthokha Waterfall, and local food stop.',
+      '- Day 3: Shigar Fort and Cold Desert excursion.',
+      '- Day 4: Deosai Plains full-day adventure.',
+      '- Day 5: Khaplu or Kharpocho Fort depending on your pace.',
+      '- Day 6: Optional trekking or photography day.',
+      '- Day 7: Buffer day for rest, shopping, or departure.',
+    ].slice(0, days + 2).join('\n')
+  }
+
+  return [
+    `I planned a ${days}-day ${destination} trip${interests ? ` focused on ${interests}` : ''}.`,
+    ...extraDetails.length ? [`Trip details: ${extraDetails.join(', ')}.`] : [],
+    '- Day 1: Arrival and orientation.',
+    '- Day 2: Main sightseeing spots and local culture.',
+    '- Day 3: Outdoor activity and scenic viewpoints.',
+    '- Day 4: Flexible exploration and food experience.',
+    '- Day 5: Relaxed wrap-up and departure prep.',
+  ].slice(0, days + 1).join('\n')
+}
+
+function buildFollowUpTripResponse(session: ChatSessionState, message: string) {
+  if (!session.lastDestination) return null
+
+  const details = extractTripDetails(message)
+  const hasDetailUpdate = Boolean(details.days || details.interests.length || details.budget || details.month || details.hotelPreference)
+
+  if (isAffirmativeFollowUp(message) && !hasDetailUpdate) {
+    return buildDayByDayItinerary({
+      destination: session.lastDestination,
+      days: session.lastTripDays,
+      interests: session.lastTripInterests || [],
+      budget: session.lastTripBudget,
+      month: session.lastTripMonth,
+      hotelPreference: session.lastHotelPreference,
+    })
+  }
+
+  if (hasDetailUpdate) {
+    return buildDayByDayItinerary({
+      destination: session.lastDestination,
+      days: details.days || session.lastTripDays,
+      interests: details.interests.length ? details.interests : (session.lastTripInterests || []),
+      budget: details.budget || session.lastTripBudget,
+      month: details.month || session.lastTripMonth,
+      hotelPreference: details.hotelPreference || session.lastHotelPreference,
+    })
+  }
+
+  return null
+}
+
 function buildTravelResponse(message: string): string {
   const input = normalizeText(message)
   
@@ -230,6 +383,11 @@ function buildTravelResponse(message: string): string {
   }
   
   // Specific destinations
+  const tripContext = extractTripContext(input)
+  if (tripContext && (tripContext.days || tripContext.interests.length)) {
+    return buildDayByDayItinerary(tripContext)
+  }
+
   if (/hunza/.test(input)) {
     return 'Hunza is stunning! Known for Baltit Fort, Attabad Lake, Passu Cones. Best time: May-Oct. Perfect for: hiking, sightseeing, cultural tours. Very safe and friendly. Want to know more about activities?'
   }
@@ -328,6 +486,32 @@ async function generateGrokResponse(message: string): Promise<string | null> {
   }
 }
 
+async function generateEnhancedLLMResponse(
+  message: string,
+  userRole?: string,
+  conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>,
+  userPreferences?: any
+): Promise<string | null> {
+  // Try the enhanced LLM provider first
+  const systemPrompt = buildTrailMateSystemPrompt(userRole, userPreferences)
+  const llmMessages = (conversationHistory || []).map(msg => ({
+    role: msg.role as 'user' | 'assistant' | 'system',
+    content: msg.content,
+  }))
+  
+  const response = await generateContextualTravelResponse(
+    message,
+    llmMessages,
+    userRole,
+    userPreferences
+  )
+  
+  if (response) return response
+  
+  // Fallback to Grok
+  return generateGrokResponse(message)
+}
+
 function roleDashboardPath(role: TrailMateRole) {
   return role === 'traveler' ? '/dashboard/user' : '/dashboard/' + role
 }
@@ -410,8 +594,8 @@ export async function POST(request: NextRequest) {
       }
 
       if (isGeneralConversation(message)) {
-        const grokReply = await generateGrokResponse(message)
-        const reply = grokReply || buildTravelResponse(message)
+        const llmReply = await generateEnhancedLLMResponse(message)
+        const reply = llmReply || buildTravelResponse(message)
         return NextResponse.json(
           { sessionId, intent: 'unknown', reply, followUp: ['Sign in for account features.'] } satisfies ChatResponsePayload,
           { status: 200 },
@@ -477,8 +661,43 @@ export async function POST(request: NextRequest) {
     session.history = session.history || []
     session.history.push({ role: 'user', content: message })
     session.history = trimHistory(session.history)
+
+    const currentTripContext = extractTripContext(message)
+    if (currentTripContext) {
+      session.lastDestination = currentTripContext.destination
+      session.lastTripDays = currentTripContext.days
+      session.lastTripInterests = currentTripContext.interests
+      session.lastTripBudget = currentTripContext.budget
+      session.lastTripMonth = currentTripContext.month
+      session.lastHotelPreference = currentTripContext.hotelPreference
+      session.pendingFlow = undefined
+    }
+
+    const followUpTripReply = buildFollowUpTripResponse(session, message)
+    if (followUpTripReply) {
+      session.lastIntent = 'unknown'
+      session.lastTripReply = followUpTripReply
+      session.history.push({ role: 'assistant', content: followUpTripReply })
+      session.history = trimHistory(session.history)
+      saveChatSession(session)
+
+      return NextResponse.json(
+        {
+          sessionId: session.sessionId,
+          role,
+          intent: 'unknown',
+          reply: followUpTripReply,
+          actions: [
+            { label: 'Browse Destinations', href: '/destinations' },
+            { label: 'Browse Guides', href: '/guides' },
+          ],
+        } satisfies ChatResponsePayload,
+        { status: 200 },
+      )
+    }
     
     if (!canUseIntent(role, intent)) {
+      session.lastIntent = intent
       saveChatSession(session)
       return NextResponse.json({ sessionId: session.sessionId, role, intent, reply: 'Not available for your role.', actions: [{ label: 'Dashboard', href: roleDashboardPath(role) }] } satisfies ChatResponsePayload, { status: 200 })
     }
@@ -491,8 +710,10 @@ export async function POST(request: NextRequest) {
       reply = 'Opening your dashboard...'
       actions = [{ label: 'Go to Dashboard', href: roleDashboardPath(role) }]
     } else if (intent === 'small_talk' || intent === 'unknown' || isGeneralConversation(message)) {
-      const grokReply = await generateGrokResponse(message)
-      reply = grokReply || buildTravelResponse(message)
+      const db = await getDatabase()
+      const userPrefs = await db.collection('guide_matching_preferences').findOne({ userId: new ObjectId(payload.userId) })
+      const llmReply = await generateEnhancedLLMResponse(message, role, session.history, userPrefs)
+      reply = llmReply || buildTravelResponse(message)
     } else if (intent === 'discover_destinations') {
       const res = await apiCall(request, '/api/destinations?published=true&paginate=false')
       const destinations = (res.body?.destinations || []).slice(0, 3)
@@ -548,10 +769,67 @@ export async function POST(request: NextRequest) {
       const users = res.body?.users || []
       reply = 'Platform has ' + users.length + ' users.'
       actions = [{ label: 'Users', href: '/dashboard/admin/users' }]
+    } else if (message.toLowerCase().includes('recommend') || message.toLowerCase().includes('match') || message.toLowerCase().includes('find guide')) {
+      // Handle guide matching for travelers
+      if (role === 'traveler') {
+        try {
+          const db = await getDatabase()
+          const preferences = await db.collection('guide_matching_preferences').findOne({
+            userId: new ObjectId(payload.userId),
+          })
+
+          if (preferences) {
+            const guides = await db.collection('guides').find({ isPublished: true }).toArray()
+            if (guides.length > 0) {
+              const matchResults = matchGuidesForTraveler({
+                preferences: preferences as any,
+                guides,
+              })
+              const topMatches = getTopMatchingGuides(matchResults, 3)
+              
+              if (topMatches.length > 0) {
+                reply = `I found ${topMatches.length} great guides that match your preferences!`
+                actions = topMatches.map(match => ({
+                  label: `${match.guide.name} (${match.matchScore * 100}% match)`,
+                  href: `/guides/${match.guide._id}`,
+                }))
+                actions.push({ label: 'View All Matches', href: '/guides/match' })
+              } else {
+                reply = 'Let me help you find the perfect guide. Please set your preferences first.'
+                actions = [{ label: 'Set Guide Preferences', href: '/dashboard/user' }]
+              }
+            } else {
+              reply = 'No guides available right now. Check back soon!'
+              actions = [{ label: 'Browse Guides', href: '/guides' }]
+            }
+          } else {
+            reply = 'I need your travel preferences to find matching guides. Would you like to set them now?'
+            actions = [{ label: 'Set Preferences', href: '/dashboard/user' }, { label: 'Browse Guides', href: '/guides' }]
+          }
+        } catch {
+          reply = 'Unable to find matches right now. Browse guides instead.'
+          actions = [{ label: 'Browse Guides', href: '/guides' }]
+        }
+      } else {
+        reply = 'Guide matching is available for travelers. Sign up as a traveler to get personalized guide recommendations!'
+        actions = [{ label: 'Sign Up', href: '/signup' }]
+      }
     } else {
       reply = 'I can help with destinations, guides, bookings, or travel advice. What would you like?'
       actions = [{ label: 'Dashboard', href: roleDashboardPath(role) }]
     }
+
+    session.lastIntent = intent
+    if (currentTripContext) {
+      session.lastDestination = currentTripContext.destination
+      session.lastTripDays = currentTripContext.days
+      session.lastTripInterests = currentTripContext.interests
+      session.lastTripBudget = currentTripContext.budget
+      session.lastTripMonth = currentTripContext.month
+      session.lastHotelPreference = currentTripContext.hotelPreference
+      session.lastTripReply = reply
+    }
+    session.lastTripReply = reply
     
     session.history.push({ role: 'assistant', content: reply })
     session.history = trimHistory(session.history)

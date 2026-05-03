@@ -39,6 +39,9 @@ interface Guide {
   name: string
   email: string
   avatar?: string
+  profileImage?: string
+  image?: string
+  updatedAt?: string
   bio: string
   location: string
   specialties: string[]
@@ -371,7 +374,7 @@ export default function GuideDetailPage() {
         setReviewData({ rating: 5, comment: "", tourDate: "" })
         
         // Refresh reviews
-        const reviewsResponse = await fetch(`/api/reviews?guideId=${guide._id}`)
+        const reviewsResponse = await fetch(`/api/reviews?guideId=${guide._id}&paginate=false`)
         if (reviewsResponse.ok) {
           const data = await reviewsResponse.json()
           setReviews(data.reviews || [])
@@ -437,7 +440,7 @@ export default function GuideDetailPage() {
 
     async function fetchReviews() {
       try {
-        const response = await fetch(`/api/reviews?guideId=${params.id}`)
+        const response = await fetch(`/api/reviews?guideId=${params.id}&paginate=false`)
         if (response.ok) {
           const data = await response.json()
           setReviews(data.reviews || [])
@@ -506,6 +509,12 @@ export default function GuideDetailPage() {
     )
   }
 
+  const guideImageSource = guide.avatar || guide.profileImage || guide.image || "/placeholder.svg"
+  const isInlineOrBlobGuideImage = guideImageSource.startsWith("data:") || guideImageSource.startsWith("blob:")
+  const guideImageWithVersion = guideImageSource.includes("?") || isInlineOrBlobGuideImage
+    ? guideImageSource
+    : `${guideImageSource}?v=${encodeURIComponent(guide.updatedAt || guide._id)}`
+
   return (
     <>
       <Navbar />
@@ -524,7 +533,7 @@ export default function GuideDetailPage() {
           <div className="flex flex-col lg:flex-row gap-8 items-start">
             <div className="flex-shrink-0">
               <Avatar className="h-40 w-40 border-4 border-background shadow-xl">
-                <AvatarImage src={guide.avatar || "/placeholder.svg"} alt={guide.name} />
+                <AvatarImage src={guideImageWithVersion} alt={guide.name} />
                 <AvatarFallback className="text-4xl">
                   {guide.name
                     .split(" ")

@@ -53,7 +53,7 @@ export default function GuideReviewsPage() {
       if (!user?._id) return
 
       try {
-        const response = await fetch(`/api/guides?userId=${user._id}`)
+        const response = await fetch(`/api/guides?userId=${user._id}&paginate=false`)
         if (response.ok) {
           const data = await response.json()
           if (data.guides && data.guides.length > 0) {
@@ -75,7 +75,7 @@ export default function GuideReviewsPage() {
       if (!guideProfileId) return
 
       try {
-        const response = await fetch(`/api/reviews?guideId=${guideProfileId}`)
+        const response = await fetch(`/api/reviews?guideId=${guideProfileId}&paginate=false`)
         if (response.ok) {
           const data = await response.json()
           const fetchedReviews = data.reviews || []

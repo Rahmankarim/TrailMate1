@@ -60,6 +60,13 @@ export type ChatSessionState = {
   role: TrailMateRole
   pendingFlow?: BookingCreateFlow
   lastIntent?: ChatIntent
+  lastDestination?: string
+  lastTripDays?: number
+  lastTripInterests?: string[]
+  lastTripBudget?: string
+  lastTripMonth?: string
+  lastHotelPreference?: string
+  lastTripReply?: string
   history?: Array<{
     role: "user" | "assistant"
     content: string

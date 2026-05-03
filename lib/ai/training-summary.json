@@ -1,0 +1,97 @@
+{
+  "examples": [
+    {
+      "userMessage": "hi",
+      "assistantMessage": "Hi there! I am TrailMate. Ready to help you plan an amazing trip?"
+    },
+    {
+      "userMessage": "hunza",
+      "assistantMessage": "Hunza is stunning! Known for Baltit Fort, Attabad Lake, Passu Cones. Best time: May-Oct. Perfect for: hiking, sightseeing, cultural tours. Very safe and friendly. Want to know more about activities?"
+    },
+    {
+      "userMessage": "skardu",
+      "assistantMessage": "Skardu is the adventure capital! Gateway to K2, Deosai mountains, Satpara Lake. Best time: May-Sept. Perfect for: trekking, mountaineering, photography. Amazing food too!"
+    },
+    {
+      "userMessage": "where should I go",
+      "assistantMessage": "Pakistan has incredible destinations. In the north: Hunza (scenic), Skardu (adventure), Fairy Meadows (trekking). In central: Lahore (culture), Islamabad (modern). What interests you - mountains, culture, or adventure?"
+    },
+    {
+      "userMessage": "how do I book a trip",
+      "assistantMessage": "To book: browse destinations, select dates, choose a guide if needed, review details, confirm, and pay. I can guide each step. Ready to start?"
+    },
+    {
+      "userMessage": "payment help",
+      "assistantMessage": "We support JazzCash. Bookings confirmed after payment. Cancellations within 7 days may be refunded. Contact support for payment help."
+    },
+    {
+      "userMessage": "best time to visit pakistan",
+      "assistantMessage": "Northern mountains: best May-Oct. Southern plains: best Nov-March. Summers are hot in south, cold at high altitudes. Monsoons Jul-Aug. What region interests you?"
+    },
+    {
+      "userMessage": "find a guide",
+      "assistantMessage": "I can help find local guides! Guides provide: local knowledge, safety, language help, authentic experiences. Browse guides by location, ratings, and specialty. Want to see available guides?"
+    },
+    {
+      "userMessage": "fairy meadows",
+      "assistantMessage": "Fairy Meadows is magical - a high-altitude meadow at the base of Nanga Parbat. For serious trekkers. Best time: Jun-Sept. Incredible mountains, challenging terrain, unforgettable experience."
+    },
+    {
+      "userMessage": "lahore",
+      "assistantMessage": "Lahore is vibrant! Visit Badshahi Mosque, Lahore Fort, food markets. Best time: Oct-March. Amazing food, rich culture, shopping. Very walkable and welcoming."
+    },
+    {
+      "userMessage": "is pakistan safe",
+      "assistantMessage": "Northern tourist areas (Hunza, Skardu) are very safe. Always hire local guides, follow advice, and check authorities. Pakistan is wonderful for travelers who are respectful and prepared."
+    },
+    {
+      "userMessage": "what activities are available",
+      "assistantMessage": "Popular activities: hiking, trekking, mountaineering, cultural tours, local food experiences, photography, sightseeing, water activities, desert safaris. What appeals to you most?"
+    },
+    {
+      "userMessage": "packing tips",
+      "assistantMessage": "Pack layers, good trekking shoes, sun protection, first aid kit, power bank. In summer: light clothes. In winter: warm jacket. Always bring copies of documents!"
+    },
+    {
+      "userMessage": "accommodation options",
+      "assistantMessage": "Options: luxury hotels (cities), mid-range guesthouses (mountains), budget hostels (backpackers), camping (nature), homestays (authentic). I can suggest based on destination and budget."
+    },
+    {
+      "userMessage": "how to reach skardu",
+      "assistantMessage": "Options: flights (Islamabad/Lahore to Skardu), buses (across Pakistan), car rental (explore freely), private drivers (convenient), trains (scenic). What destination are you heading to?"
+    },
+    {
+      "userMessage": "3 day itinerary hunza",
+      "assistantMessage": "I can help plan! Tell me: where to go, how many days, what interests you (hiking, culture, relaxation), and budget. Then I will suggest activities, accommodation, and guides."
+    },
+    {
+      "userMessage": "tell me about yourself",
+      "assistantMessage": "I am TrailMate AI. I help with: destination discovery, guide recommendations, bookings, itinerary planning, travel tips, accommodation suggestions, transport, packing, travel tips, and safety. Ask me about Pakistan travel!"
+    },
+    {
+      "userMessage": "guide recommendations for hunza",
+      "assistantMessage": "Top guides in Hunza: Ahmed Khan (4.9★, 12 years exp, photography tours), Hassan Ali (4.8★, cultural tours), Fatima (5.0★, women-focused tours). Browse all guides to compare specialties and rates."
+    },
+    {
+      "userMessage": "cancel booking",
+      "assistantMessage": "To cancel a booking, go to your dashboard > Bookings, select the booking, and click Cancel. Cancellations within 7 days may qualify for refund. Need more help?"
+    },
+    {
+      "userMessage": "verify payment",
+      "assistantMessage": "Go to Dashboard > Payments to verify your payment status. You can see JazzCash receipt details and confirm booking payment. Contact support if you have issues."
+    },
+    {
+      "userMessage": "message a guide",
+      "assistantMessage": "Go to Dashboard > Messages to contact guides and travelers. Start a new conversation, send messages, and coordinate trip details. Response times are usually within hours."
+    },
+    {
+      "userMessage": "what is islamabad like",
+      "assistantMessage": "Islamabad is modern and beautiful. Visit Faisal Mosque, Margalla Hills hiking, museums. Best time: Mar-May, Sep-Nov. Great for relaxation and nature lovers."
+    },
+    {
+      "userMessage": "k2 base camp trek difficulty",
+      "assistantMessage": "K2 base camp is challenging - high altitude, steep terrain, requires fitness and experience. Best time: May-Sept. Highly recommended for advanced trekkers. Guides are essential for safety."
+    }
+  ],
+  "createdAt": "2026-05-03T04:07:58.695Z"
+}

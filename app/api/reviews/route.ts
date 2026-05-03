@@ -44,12 +44,17 @@ export async function GET(request: NextRequest) {
         .limit(limit)
         .toArray()
 
-      return NextResponse.json(
-        createPaginatedResponse(reviews, totalReviews, page, limit, {
-          averageRating: Math.round(averageRating * 10) / 10,
-          totalReviews
-        })
-      )
+      const paginated = createPaginatedResponse(reviews, totalReviews, page, limit, {
+        averageRating: Math.round(averageRating * 10) / 10,
+        totalReviews,
+      })
+
+      return NextResponse.json({
+        ...paginated,
+        reviews,
+        averageRating: Math.round(averageRating * 10) / 10,
+        totalReviews,
+      })
     } else {
       const reviews = await reviewsCollection
         .find(query)

@@ -4,6 +4,7 @@ import { verifyAccessToken } from "@/lib/auth/jwt"
 import { cookies } from "next/headers"
 import { ObjectId } from "mongodb"
 import { createSuccessResponse, createErrorResponse } from "@/lib/utils/responses"
+import { checkAndAwardBadgesOnBookingComplete } from "@/lib/utils/badge-system"
 
 // PUT - Update booking status
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -143,10 +144,28 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       console.log('Booking ID:', booking._id.toString())
     }
 
+    // Award badges if booking is being completed and has a guide
+    let badgesAwarded = null
+    if (body.status === "completed" && booking.guideId) {
+      try {
+        badgesAwarded = await checkAndAwardBadgesOnBookingComplete(db, id)
+        console.log('=== BADGES AWARDED ===')
+        console.log('Guide ID:', booking.guideId.toString())
+        console.log('Badges:', badgesAwarded)
+      } catch (badgeError) {
+        console.error("Error awarding badges:", badgeError)
+        // Don't fail the booking update if badges fail
+      }
+    }
+
     const updatedBooking = await collection.findOne({ _id: new ObjectId(id) })
 
     return NextResponse.json(createSuccessResponse(
-      { booking: updatedBooking },
+      { 
+        booking: updatedBooking,
+        badgesAwarded: badgesAwarded?.newBadges || [],
+        badgeMessage: badgesAwarded?.message,
+      },
       "Booking updated successfully"
     ))
   } catch (error) {

@@ -42,6 +42,13 @@ export function getOrCreateChatSession(userId: string, role: TrailMateRole, sess
     sessionId,
     userId,
     role,
+    lastDestination: undefined,
+    lastTripDays: undefined,
+    lastTripInterests: [],
+    lastTripBudget: undefined,
+    lastTripMonth: undefined,
+    lastHotelPreference: undefined,
+    lastTripReply: undefined,
     history: [],
     updatedAt: Date.now(),
   }

@@ -1,0 +1,7 @@
+{
+  "mode": "local-rag",
+  "status": "ready",
+  "examplesCount": 23,
+  "trainingFile": "training-data.jsonl",
+  "timestamp": "2026-05-03T04:07:58.695Z"
+}
