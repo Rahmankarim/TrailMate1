@@ -69,9 +69,15 @@ export async function GET(request: NextRequest) {
     }
   } catch (error) {
     console.error("Error fetching reviews:", error)
+    // Return a safe, consistent response so clients can render gracefully in production (e.g. Vercel)
     return NextResponse.json(
-      createErrorResponse("Failed to fetch reviews", 500),
-      { status: 500 }
+      {
+        reviews: [],
+        averageRating: 0,
+        totalReviews: 0,
+        error: "Failed to fetch reviews",
+      },
+      { status: 200 }
     )
   }
 }

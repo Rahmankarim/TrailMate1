@@ -14,6 +14,7 @@ interface Destination {
   _id: string
   name: string
   slug: string
+  ownerName?: string
   shortDescription?: string
   description: string
   location: string
@@ -39,6 +40,7 @@ export function DestinationsContent() {
   const [sortBy, setSortBy] = useState("Popular")
   const [destinations, setDestinations] = useState<Destination[]>([])
   const [loading, setLoading] = useState(true)
+  const heroBackground = "/attabad-lake-blue-water-boat-mountains.jpg"
 
   useEffect(() => {
     const fetchDestinations = async () => {
@@ -86,20 +88,37 @@ export function DestinationsContent() {
       })
   }, [destinations, searchQuery, selectedCategory, selectedDifficulty, sortBy])
 
+  // Build groups by destination name (case-insensitive)
+  const groupedByName = useMemo(() => {
+    const map = new Map<string, Destination[]>()
+    for (const dest of filteredDestinations) {
+      const key = dest.name.trim().toLowerCase()
+      const arr = map.get(key) || []
+      arr.push(dest)
+      map.set(key, arr)
+    }
+    return map
+  }, [filteredDestinations])
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="pt-24 pb-12 px-6 bg-secondary">
-        <div className="max-w-7xl mx-auto">
+      <section className="relative overflow-hidden pt-24 pb-12 px-6">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${heroBackground})` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-foreground/85 via-foreground/60 to-foreground/25" />
+        <div className="relative max-w-7xl mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4 text-balance">Explore Destinations</h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto text-pretty">
+            <h1 className="text-4xl md:text-5xl font-bold text-background mb-4 text-balance">Explore Destinations</h1>
+            <p className="text-xl text-background/85 max-w-2xl mx-auto text-pretty">
               Discover breathtaking locations for your next sustainable adventure
             </p>
           </div>
 
           {/* Search and Filters */}
-          <div className="bg-card rounded-2xl p-6 shadow-lg border border-border">
+          <div className="bg-background/90 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-background/20">
             <div className="flex flex-col lg:flex-row gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -184,9 +203,14 @@ export function DestinationsContent() {
                 </Card>
               ))
             ) : (
-              filteredDestinations.map((destination) => (
-                <DestinationCard key={destination._id} destination={destination} />
-              ))
+              // Render grouped items: if multiple destinations share same name, render a GroupCard
+              Array.from(groupedByName.values()).map((group) =>
+                group.length > 1 ? (
+                  <GroupCard key={group[0]._id} name={group[0].name} items={group} />
+                ) : (
+                  <DestinationCard key={group[0]._id} destination={group[0]} />
+                ),
+              )
             )}
           </div>
 
@@ -224,9 +248,14 @@ function DestinationCard({ destination }: { destination: Destination }) {
           </Badge>
           <div className="absolute bottom-4 left-4 right-4">
             <h3 className="text-2xl font-bold text-background mb-1">{destination.name}</h3>
-            <div className="flex items-center gap-1 text-background/90 text-sm">
-              <MapPin className="h-4 w-4" />
-              <span>{destination.location}</span>
+            <div className="flex items-center gap-2 text-background/90 text-sm">
+              <div className="flex items-center gap-1">
+                <MapPin className="h-4 w-4" />
+                <span>{destination.location}</span>
+              </div>
+              {destination.ownerName && (
+                <div className="ml-3 text-sm text-background/80">• {destination.ownerName}</div>
+              )}
             </div>
           </div>
         </div>
@@ -261,5 +290,97 @@ function DestinationCard({ destination }: { destination: Destination }) {
         </CardContent>
       </Card>
     </Link>
+  )
+}
+
+function GroupCard({ name, items }: { name: string; items: Destination[] }) {
+  const [open, setOpen] = useState(false)
+  const groupImages = [
+    items[0]?.coverImage || items[0]?.images?.[0] || "/placeholder.svg",
+    items[1]?.coverImage || items[1]?.images?.[0] || items[0]?.coverImage || items[0]?.images?.[0] || "/placeholder.svg",
+  ]
+
+  return (
+    <>
+      <div className="group">
+        <Card
+          onClick={() => setOpen(true)}
+          className="overflow-hidden border-border hover:shadow-xl hover:-translate-y-2 transition-all duration-500 cursor-pointer"
+        >
+          <div className="relative h-64 overflow-hidden bg-muted p-4">
+            <div className="grid grid-cols-2 gap-3 h-full">
+              {groupImages.map((image, index) => (
+                <div key={`${name}-${index}`} className="relative overflow-hidden rounded-xl bg-background shadow-sm">
+                  <img
+                    src={image}
+                    alt={`${name} ${index + 1}`}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-foreground/55 via-transparent to-transparent" />
+                </div>
+              ))}
+            </div>
+            <Badge
+              variant="secondary"
+              className="absolute top-4 right-4 bg-background/90 text-foreground backdrop-blur-sm"
+            >
+              {items.length} listings
+            </Badge>
+            <div className="absolute bottom-2 left-4 right-4 pb-1">
+              <h3 className="text-2xl font-bold text-background mb-1">{name}</h3>
+              <p className="text-sm text-background/85 line-clamp-1">
+                {items[0]?.location} {items[0]?.ownerName ? `• ${items[0].ownerName}` : ""}
+              </p>
+            </div>
+          </div>
+          <CardContent className="p-5">
+            <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
+              Multiple destinations share this name. Click to view all listings.
+            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-2xl font-bold text-foreground">&nbsp;</span>
+              </div>
+              <Button size="sm" className="bg-foreground text-background hover:bg-foreground/90">
+                View Group
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
+          <div className="relative max-w-3xl w-full mx-4">
+            <Card className="overflow-hidden">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">{name} — {items.length} listings</h3>
+                  <Button size="sm" onClick={() => setOpen(false)}>Close</Button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {items.map((d) => (
+                    <Link key={d._id} href={`/destinations/${d.slug}`} className="block">
+                      <Card className="overflow-hidden">
+                        <div className="relative h-36 overflow-hidden">
+                          <img src={d.coverImage || d.images?.[0] || "/placeholder.svg"} alt={d.name} className="w-full h-full object-cover" />
+                        </div>
+                        <CardContent>
+                          <h4 className="font-semibold text-foreground">{d.name}</h4>
+                          <div className="text-sm text-muted-foreground">{d.location} • {d.ownerName}</div>
+                          <p className="text-sm text-muted-foreground line-clamp-2 mt-2">{d.shortDescription || d.description}</p>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+    </>
   )
 }

@@ -81,6 +81,7 @@ export default function GuideDetailPage() {
   const [averageRating, setAverageRating] = useState(0)
   const [hasUserReviewed, setHasUserReviewed] = useState(false)
   const [userExistingReview, setUserExistingReview] = useState<any>(null)
+  const [reviewsError, setReviewsError] = useState<string | null>(null)
   const { user } = useAuth()
   const [hireOpen, setHireOpen] = useState(false)
   const [hireData, setHireData] = useState({
@@ -386,6 +387,9 @@ export default function GuideDetailPage() {
             rating: data.averageRating,
             reviewCount: data.totalReviews
           })
+        } else {
+          console.error('Failed to refresh reviews after submission')
+          setReviewsError('Unable to refresh reviews')
         }
       } else {
         const errorData = await response.json()
@@ -439,6 +443,7 @@ export default function GuideDetailPage() {
     }
 
     async function fetchReviews() {
+      setReviewsError(null)
       try {
         const response = await fetch(`/api/reviews?guideId=${params.id}&paginate=false`)
         if (response.ok) {
@@ -454,9 +459,18 @@ export default function GuideDetailPage() {
               setUserExistingReview(existingUserReview)
             }
           }
+        } else {
+          const err = await response.text()
+          console.error('Failed to load reviews:', err)
+          setReviews([])
+          setAverageRating(0)
+          setReviewsError('Unable to load reviews at this time')
         }
       } catch (error) {
         console.error("Error fetching reviews:", error)
+        setReviews([])
+        setAverageRating(0)
+        setReviewsError('Unable to load reviews at this time')
       }
     }
 
@@ -1049,7 +1063,12 @@ export default function GuideDetailPage() {
                           </p>
                         </div>
                       )}
-                      {reviews.length === 0 ? (
+                      {reviewsError ? (
+                        <div className="text-center py-8 text-destructive">
+                          <Star className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                          <p>{reviewsError}</p>
+                        </div>
+                      ) : reviews.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">
                           <Star className="h-12 w-12 mx-auto mb-4 opacity-50" />
                           <p>No reviews yet. Be the first to review this guide!</p>

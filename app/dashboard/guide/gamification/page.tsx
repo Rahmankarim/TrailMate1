@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useSession } from 'next-auth/react'
 import {
   Card,
   CardContent,
@@ -95,7 +94,6 @@ const CATEGORY_ICONS: Record<string, string> = {
 }
 
 export default function GamificationPage() {
-  const { data: session } = useSession()
   const router = useRouter()
 
   const [loading, setLoading] = useState(true)
@@ -106,15 +104,13 @@ export default function GamificationPage() {
 
   // Fetch guide badges and summary
   useEffect(() => {
-    if (!session?.user?.id) return
-
     const fetchData = async () => {
       try {
         setLoading(true)
         setError(null)
 
         const [badgesRes, leaderboardRes] = await Promise.all([
-          fetch(`/api/guides/${session.user.id}/badges`),
+          fetch('/api/badges'),
           fetch('/api/badges/leaderboard?limit=10'),
         ])
 
@@ -141,27 +137,7 @@ export default function GamificationPage() {
     }
 
     fetchData()
-  }, [session?.user?.id])
-
-  if (!session) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle>Authentication Required</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-600 mb-4">
-              Please sign in to view your gamification stats.
-            </p>
-            <Button onClick={() => router.push('/signin')} className="w-full">
-              Sign In
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
+  }, [])
 
   if (error) {
     return (

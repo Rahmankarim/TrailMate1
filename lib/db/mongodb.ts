@@ -18,17 +18,30 @@ function getMongoClientPromise(): Promise<MongoClient> {
     throw new Error("Please define the MONGODB_URI environment variable")
   }
 
+  const createAndConnect = async () => {
+    try {
+      const client = new MongoClient(uri, options)
+      return client.connect()
+    } catch (err: any) {
+      console.error("Failed to connect to MongoDB:", err && err.message ? err.message : err)
+      console.error("MongoDB URI:", uri && uri.length > 60 ? `${uri.slice(0, 60)}...` : uri)
+      console.error(
+        "If you're using MongoDB Atlas (mongodb+srv://), ensure your network allows DNS SRV lookups and your current IP is allow-listed in Atlas Network Access.\n" +
+          "For local development, you can switch to a local MongoDB instance by setting MONGODB_URI=mongodb://127.0.0.1:27017/trailmate in your .env.local."
+      )
+      throw err
+    }
+  }
+
   if (process.env.NODE_ENV === "development") {
     // In development, preserve the client promise across hot reloads.
     if (!global._mongoClientPromise) {
-      const client = new MongoClient(uri, options)
-      global._mongoClientPromise = client.connect()
+      global._mongoClientPromise = createAndConnect()
     }
     clientPromise = global._mongoClientPromise
   } else {
     // In production, create one client promise per process.
-    const client = new MongoClient(uri, options)
-    clientPromise = client.connect()
+    clientPromise = createAndConnect()
   }
 
   return clientPromise

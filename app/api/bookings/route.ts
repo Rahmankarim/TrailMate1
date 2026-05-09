@@ -40,19 +40,24 @@ export async function GET(request: NextRequest) {
         query.guideId = guideProfile._id
       }
     } else if (type === "company") {
-      // For companies viewing destination bookings, find bookings for their destinations
-      const destinationsCollection = db.collection("destinations")
-      const companyDestinations = await destinationsCollection
-        .find({ userId: new ObjectId(payload.userId) })
-        .toArray()
-      
-      const destinationIds = companyDestinations.map(d => d._id)
-      
-      if (destinationIds.length > 0) {
-        query.destinationId = { $in: destinationIds }
+      if (bookingType === "guide_hiring") {
+        // Company guide hiring requests are stored by company userId
+        query.userId = new ObjectId(payload.userId)
       } else {
-        // No destinations, return empty results
-        query.destinationId = new ObjectId("000000000000000000000000") // Non-existent ID
+        // For companies viewing destination bookings, find bookings for their destinations
+        const destinationsCollection = db.collection("destinations")
+        const companyDestinations = await destinationsCollection
+          .find({ userId: new ObjectId(payload.userId) })
+          .toArray()
+
+        const destinationIds = companyDestinations.map((d) => d._id)
+
+        if (destinationIds.length > 0) {
+          query.destinationId = { $in: destinationIds }
+        } else {
+          // No destinations, return empty results
+          query.destinationId = new ObjectId("000000000000000000000000") // Non-existent ID
+        }
       }
     } else {
       // For travelers, find their bookings
@@ -147,6 +152,7 @@ export async function GET(request: NextRequest) {
         let guideEmail = ""
         let userName = ""
         let userEmail = ""
+        let userAvatar = ""
 
         if (booking.destinationId) {
           destination = await db.collection("destinations").findOne({ _id: booking.destinationId })
@@ -161,6 +167,14 @@ export async function GET(request: NextRequest) {
             }
           }
         }
+
+        if (booking.bookingType === "guide_hiring" && booking.guideId && !guideName) {
+          const guideUser = await db.collection("users").findOne({ _id: booking.guideId })
+          if (guideUser) {
+            guideName = `${guideUser.firstName || ""} ${guideUser.lastName || ""}`.trim() || guideUser.email || ""
+            guideEmail = guideUser.email || ""
+          }
+        }
         
         // Get user (traveler) information
         if (booking.userId) {
@@ -168,6 +182,7 @@ export async function GET(request: NextRequest) {
           if (user) {
             userName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email
             userEmail = user.email || ""
+            userAvatar = user.avatar || ""
           }
         }
 
@@ -180,6 +195,7 @@ export async function GET(request: NextRequest) {
           guideEmail,
           userName,
           userEmail,
+          userAvatar,
           destination, 
           guide 
         }

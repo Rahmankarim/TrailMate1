@@ -1,6 +1,7 @@
 # TrailMate AI Training - Quick Start
 
 ## 🎯 Objective
+
 Fine-tune the Grok model with 20+ curated examples to improve the TrailMate chatbot's responses about Pakistan travel, destinations, guides, and bookings.
 
 ## ✅ What's Been Set Up
@@ -30,6 +31,7 @@ Fine-tune the Grok model with 20+ curated examples to improve the TrailMate chat
 ## 🚀 How to Train (3 Steps)
 
 ### Step 1: Set API Key
+
 ```bash
 export GROK_API_KEY="your-xai-api-key"
 ```
@@ -37,23 +39,28 @@ export GROK_API_KEY="your-xai-api-key"
 Get your key: https://console.x.ai/api/keys
 
 ### Step 2: Run Training
+
 ```bash
 npm run train:grok
 ```
 
 Or manually:
+
 ```bash
 node lib/ai/fine-tune-grok.js
 ```
 
 ### Step 3: Monitor Progress
+
 The script will:
+
 - ✅ Upload training data
 - ✅ Create fine-tune job
 - ⏳ Wait for completion (10-60 minutes)
 - ✅ Save model ID automatically
 
 ### Step 4: Verify
+
 ```bash
 # Restart your dev server
 npm run dev
@@ -64,19 +71,20 @@ npm run dev
 ```
 
 Check server logs for:
+
 ```
 [Grok] Using fine-tuned model: ft-grok-2-xxxxx
 ```
 
 ## 📊 Training Data Summary
 
-| Category | Examples | Topics |
-|----------|----------|--------|
-| Destinations | 6 | Hunza, Skardu, Lahore, Islamabad, Fairy Meadows |
-| Bookings | 4 | How to book, cancellations, payment verification |
-| Travel Advice | 6 | Packing, best time, safety, activities |
-| Guides | 2 | Finding guides, guide recommendations |
-| General | 2 | Who are you, tell me about yourself |
+| Category      | Examples | Topics                                           |
+| ------------- | -------- | ------------------------------------------------ |
+| Destinations  | 6        | Hunza, Skardu, Lahore, Islamabad, Fairy Meadows  |
+| Bookings      | 4        | How to book, cancellations, payment verification |
+| Travel Advice | 6        | Packing, best time, safety, activities           |
+| Guides        | 2        | Finding guides, guide recommendations            |
+| General       | 2        | Who are you, tell me about yourself              |
 
 **Total Examples**: 20
 **Total Tokens**: ~5,000
@@ -92,19 +100,36 @@ Add more examples to improve quality:
 4. **Deploy**: New model used automatically
 
 Example: If users frequently ask about "K2 base camp", add:
+
 ```jsonl
-{"messages": [{"role": "system", "content": "..."}, {"role": "user", "content": "k2 base camp trek"}, {"role": "assistant", "content": "K2 base camp is one of the most challenging high-altitude treks..."}]}
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "..."
+    },
+    {
+      "role": "user",
+      "content": "k2 base camp trek"
+    },
+    {
+      "role": "assistant",
+      "content": "K2 base camp is one of the most challenging high-altitude treks..."
+    }
+  ]
+}
 ```
 
 ## 📋 Training Data Format
 
 Each line must be valid JSON with this structure:
+
 ```json
 {
   "messages": [
-    {"role": "system", "content": "You are TrailMate..."},
-    {"role": "user", "content": "user query"},
-    {"role": "assistant", "content": "assistant response"}
+    { "role": "system", "content": "You are TrailMate..." },
+    { "role": "user", "content": "user query" },
+    { "role": "assistant", "content": "assistant response" }
   ]
 }
 ```
@@ -116,6 +141,7 @@ Each line must be valid JSON with this structure:
 ## 🧪 Testing the Model
 
 ### Local Test
+
 ```bash
 # In Node.js REPL
 import { generateContextualTravelResponse } from '@/lib/chat/llm-provider'
@@ -129,6 +155,7 @@ console.log(response)
 ```
 
 ### Chat API Test
+
 ```bash
 curl -X POST http://localhost:3000/api/chat \
   -H "Content-Type: application/json" \
@@ -138,18 +165,20 @@ curl -X POST http://localhost:3000/api/chat \
 
 ## 🐛 Troubleshooting
 
-| Problem | Solution |
-|---------|----------|
-| "No API key found" | Run: `export GROK_API_KEY="your-key"` |
-| "File not found" | Verify: `ls lib/ai/training-data.jsonl` |
-| "Model not detected" | Restart server: `npm run dev` |
-| "Fine-tune failed" | Check training data JSON format |
-| "Training taking long" | Normal! Can take 10-60 minutes |
+| Problem                | Solution                                |
+| ---------------------- | --------------------------------------- |
+| "No API key found"     | Run: `export GROK_API_KEY="your-key"`   |
+| "File not found"       | Verify: `ls lib/ai/training-data.jsonl` |
+| "Model not detected"   | Restart server: `npm run dev`           |
+| "Fine-tune failed"     | Check training data JSON format         |
+| "Training taking long" | Normal! Can take 10-60 minutes          |
 
 ## 📚 Advanced Options
 
 ### Change Training Hyperparameters
+
 Edit `lib/ai/fine-tune-grok.js`:
+
 ```javascript
 hyperparameters: {
   n_epochs: 4,           // More training (slower, more accurate)
@@ -158,12 +187,15 @@ hyperparameters: {
 ```
 
 ### Use Different Grok Model
+
 ```javascript
-model: 'grok-4.20-reasoning' // or other variants
+model: "grok-4.20-reasoning"; // or other variants
 ```
 
 ### Track Model Performance
+
 After deployment, monitor:
+
 - Chat response quality
 - User satisfaction (if rating enabled)
 - Common follow-up questions

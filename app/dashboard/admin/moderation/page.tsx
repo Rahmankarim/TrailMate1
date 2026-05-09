@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import AdminAccessGuard from "@/components/dashboard/admin-access-guard"
 import DashboardSidebar from "@/components/dashboard/sidebar"
 import DashboardTopbar from "@/components/dashboard/topbar"
 import { useAuth } from "@/contexts/auth-context"
@@ -17,6 +18,7 @@ export default function AdminModerationPage() {
   const [isLoading, setIsLoading] = useState(false)
 
   return (
+    <AdminAccessGuard>
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar
         role="admin"
@@ -72,5 +74,6 @@ export default function AdminModerationPage() {
         </main>
       </div>
     </div>
+    </AdminAccessGuard>
   )
 }

@@ -3,6 +3,7 @@
 ## Overview
 
 This document provides comprehensive documentation for the two major features implemented:
+
 1. **AI Chatbot Integration** - Enhanced with OpenAI and Grok LLM support
 2. **Guide Matching System** - Intelligent guide discovery using cosine similarity
 
@@ -15,6 +16,7 @@ This document provides comprehensive documentation for the two major features im
 The chatbot system consists of several components:
 
 #### Files Created/Modified:
+
 - `lib/chat/llm-provider.ts` - Multi-provider LLM abstraction layer
 - `app/api/chat/route.ts` - Enhanced chat API endpoint with guide matching
 - `components/chatbot/trailmate-chatbot.tsx` - Chatbot UI (existing)
@@ -23,11 +25,13 @@ The chatbot system consists of several components:
 ### Features
 
 **Multi-Provider Support:**
+
 - **Grok (X.AI)** - Default provider, fast responses
 - **OpenAI** - Optional GPT-powered alternative (add API key to enable)
 - Automatic fallback between providers
 
 **Context-Aware Responses:**
+
 ```typescript
 // System prompt automatically includes:
 - User role (traveler, guide, company, admin)
@@ -36,6 +40,7 @@ The chatbot system consists of several components:
 ```
 
 **Intelligent Intent Detection:**
+
 - Navigation commands (`"go to bookings"`, `"/dashboard"`)
 - Guide matching requests (`"find me a guide"`, `"recommend a guide"`)
 - General travel queries
@@ -45,6 +50,7 @@ The chatbot system consists of several components:
 ### Configuration
 
 #### Using Grok (Default)
+
 ```env
 LLM_PROVIDER=grok
 GROK_API_KEY=REDACTED_GROK_API_KEY
@@ -53,6 +59,7 @@ GROK_BASE_URL=https://api.x.ai/v1
 ```
 
 #### Switching to OpenAI
+
 ```env
 LLM_PROVIDER=openai
 OPENAI_API_KEY=sk-your-api-key-here
@@ -62,6 +69,7 @@ OPENAI_MODEL=gpt-3.5-turbo
 ### API Endpoints
 
 **Chat Endpoint:**
+
 ```bash
 POST /api/chat
 Content-Type: application/json
@@ -87,21 +95,23 @@ Response:
 ### Usage Examples
 
 **From Frontend (TypeScript/React):**
+
 ```typescript
 // In chatbot component
-const response = await fetch('/api/chat', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ 
+const response = await fetch("/api/chat", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
     message: userInput,
-    sessionId: sessionId 
+    sessionId: sessionId,
   }),
-})
+});
 
-const data = await response.json()
+const data = await response.json();
 ```
 
 **Travel-Related Queries:**
+
 ```
 User: "Tell me about Hunza"
 Bot: "Hunza is stunning! Known for Baltit Fort, Attabad Lake, Passu Cones..."
@@ -170,6 +180,7 @@ generateDestinationDescription(
 The guide matching system uses **Cosine Similarity** and **Weighted Scoring** to find the best guide matches.
 
 #### Files Created:
+
 - `lib/db/models/guide-matching.ts` - Data models and types
 - `lib/utils/guide-matching.ts` - Matching algorithm
 - `app/api/guides/match/route.ts` - API endpoint
@@ -178,6 +189,7 @@ The guide matching system uses **Cosine Similarity** and **Weighted Scoring** to
 ### Algorithm Details
 
 **Matching Factors (Weights):**
+
 1. **Location Match** (20%) - Exact, partial, or no match
 2. **Interest Match** (25%) - Cosine similarity of specialties
 3. **Language Match** (15%) - Cosine similarity of languages
@@ -186,8 +198,9 @@ The guide matching system uses **Cosine Similarity** and **Weighted Scoring** to
 6. **Certification Match** (10%) - Professional certifications
 
 **Scoring Formula:**
+
 ```
-totalScore = 
+totalScore =
   (locationMatch × 0.20) +
   (interestMatch × 0.25) +
   (languageMatch × 0.15) +
@@ -199,6 +212,7 @@ Score Range: 0 - 1.0 (0% - 100%)
 ```
 
 **Cosine Similarity:**
+
 ```typescript
 similarity = intersection_size / union_size
 
@@ -213,6 +227,7 @@ Similarity: 2/4 = 0.5 (50%)
 ### API Endpoints
 
 **Get Matching Guides:**
+
 ```bash
 GET /api/guides/match?limit=10&interests=Trekking,Photography&skillLevel=intermediate
 
@@ -239,6 +254,7 @@ Response:
 ```
 
 **Save Matching Preferences:**
+
 ```bash
 POST /api/guides/match
 Content-Type: application/json
@@ -264,6 +280,7 @@ Response:
 ### Database Collections
 
 **guide_matching_preferences:**
+
 ```typescript
 {
   _id: ObjectId,
@@ -284,6 +301,7 @@ Response:
 ### Frontend Components
 
 **GuideMatchingPreferencesForm Component:**
+
 ```typescript
 <GuideMatchingPreferencesForm
   onSave={(preferences) => {
@@ -294,6 +312,7 @@ Response:
 ```
 
 **GuideMatchResults Component:**
+
 ```typescript
 <GuideMatchResults
   matches={matchResults}
@@ -326,6 +345,7 @@ Response:
 ### Integration with Chatbot
 
 The chatbot can trigger guide matching:
+
 ```
 User: "Find me a guide for trekking"
 Bot: [Detects guide matching intent]
@@ -349,11 +369,11 @@ Bot: [Saves preference]
 
 ```javascript
 // In MongoDB Atlas or connection
-db.collection('guide_matching_preferences').createIndex({ userId: 1 });
-db.collection('guide_matching_preferences').createIndex({ createdAt: -1 });
-db.collection('guides').createIndex({ isPublished: 1 });
-db.collection('guides').createIndex({ isVerified: 1 });
-db.collection('guides').createIndex({ location: 'text', specialties: 'text' });
+db.collection("guide_matching_preferences").createIndex({ userId: 1 });
+db.collection("guide_matching_preferences").createIndex({ createdAt: -1 });
+db.collection("guides").createIndex({ isPublished: 1 });
+db.collection("guides").createIndex({ isVerified: 1 });
+db.collection("guides").createIndex({ location: "text", specialties: "text" });
 ```
 
 ---
@@ -381,15 +401,15 @@ curl -X GET "http://localhost:3000/api/guides/match?interests=Trekking&skillLeve
 ### Test LLM Response
 
 ```typescript
-import { generateContextualTravelResponse } from '@/lib/chat/llm-provider'
+import { generateContextualTravelResponse } from "@/lib/chat/llm-provider";
 
 const response = await generateContextualTravelResponse(
   "Tell me about Pakistan travel",
   [],
   "traveler",
-  { interests: ["Trekking"], languages: ["English"] }
-)
-console.log(response)
+  { interests: ["Trekking"], languages: ["English"] },
+);
+console.log(response);
 ```
 
 ---
@@ -397,16 +417,19 @@ console.log(response)
 ## 5. Performance Optimization
 
 **Caching Strategy:**
+
 - Cache guide profiles (TTL: 1 hour)
 - Cache user preferences (invalidate on update)
 - Batch guide matching requests
 
 **Database Indexes:**
+
 - `guides.isPublished` and `guides.isVerified`
 - `guide_matching_preferences.userId`
 - Text indexes on guide fields
 
 **LLM Optimization:**
+
 - Limit conversation history to 10 messages
 - Use shorter max_tokens for faster responses
 - Implement response caching for common queries
@@ -416,12 +439,14 @@ console.log(response)
 ## 6. Error Handling
 
 **Chatbot Error Cases:**
+
 - No API key configured → Fallback to rule-based responses
 - LLM timeout → Use fallback `buildTravelResponse()`
 - Invalid user token → Return auth error
 - Guide matching API down → Suggest browsing guides
 
 **Guide Matching Error Cases:**
+
 - No user preferences → Use default preferences
 - No guides available → Return empty matches
 - Invalid parameters → Return 400 error
@@ -460,18 +485,21 @@ console.log(response)
 ## 8. Troubleshooting
 
 **Chatbot Not Responding:**
+
 - Check `LLM_PROVIDER` environment variable
 - Verify API key is valid
 - Check network connectivity
 - Review application logs
 
 **Guide Matching Returns No Results:**
+
 - Verify guides are published and verified
 - Check user preferences are saved
 - Lower minimum match score threshold
 - Verify guide language/location match
 
 **Slow Response Times:**
+
 - Check database indexes
 - Monitor API response times
 - Consider caching strategies
@@ -497,9 +525,9 @@ console.log(response)
 ## Support & Maintenance
 
 For issues or questions:
+
 1. Check logs: `app/api/chat/route.ts` and `app/api/guides/match/route.ts`
 2. Review error responses from LLM providers
 3. Verify database collections and indexes
 4. Check user preferences and guide data quality
 5. Monitor API usage and response times
-
