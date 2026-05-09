@@ -86,17 +86,9 @@ async function generateGrokResponse(
 
   try {
     const baseUrl = config.baseUrl || "https://api.x.ai/v1"
-    // Detect fine-tuned model if available
+    // Detect fine-tuned model if available (optional)
     let model = config.model || "grok-2-latest"
-    try {
-      const fineTunedConfig = require('./fine-tuned-model').fineTunedModelConfig
-      if (fineTunedConfig?.modelId && fineTunedConfig?.status === "ready") {
-        model = fineTunedConfig.modelId
-        console.log(`[Grok] Using fine-tuned model: ${model}`)
-      }
-    } catch {
-      // Fine-tuned config not available, use default model
-    }
+    // Fine-tuned model check skipped in production build
 
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",

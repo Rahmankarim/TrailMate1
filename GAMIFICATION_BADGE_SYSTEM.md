@@ -11,6 +11,7 @@ A complete **gamification system** has been implemented for guides in TrailMate.
 ### 1. **25+ Badge Types**
 
 #### Milestone Badges (5)
+
 - 🌱 **First Step** - Complete 1 trip (10 pts)
 - 📈 **Rising Guide** - Complete 5 trips (25 pts)
 - ⭐ **Seasoned Guide** - Complete 10 trips (50 pts)
@@ -18,31 +19,37 @@ A complete **gamification system** has been implemented for guides in TrailMate.
 - 👑 **Legend Guide** - Complete 50 trips (250 pts)
 
 #### Rating Badges (3)
+
 - 🌟 **Well Liked** - 4.0+ star rating (30 pts)
 - ✨ **Excellent Guide** - 4.5+ star rating (60 pts)
 - 💎 **Perfect Guide** - 4.9+ star rating (150 pts)
 
 #### Community Badges (2)
+
 - 💬 **Reviewer Magnet** - 10 positive reviews (35 pts)
 - ❤️ **Community Favorite** - 25 positive reviews (75 pts)
 
 #### Reliability Badges (2)
+
 - ⚡ **Quick Replier** - Respond within 1 hour (25 pts)
 - 🚀 **Always Available** - Respond within 30 mins (50 pts)
 
 #### Specialization Badges (4)
+
 - ⛰️ **Trekking Expert** - 10 trekking trips (75 pts)
 - 🏔️ **Mountain Master** - 10 mountaineering trips (150 pts)
 - 📸 **Photography Master** - 5 photo trips (75 pts)
 - 🎭 **Culture Guide** - 5 cultural trips (60 pts)
 
 #### Seasonal Badges (4)
+
 - 🌸 **Spring Guide** - 3 spring trips (30 pts)
 - ☀️ **Summer Warrior** - 5 summer trips (40 pts)
 - 🍂 **Autumn Adventurer** - 3 autumn trips (35 pts)
 - ❄️ **Winter Warrior** - 3 winter trips (80 pts)
 
 #### Premium Badges (2)
+
 - 💰 **Earning Start** - PKR 50,000+ earned (50 pts)
 - 💵 **Big Earner** - PKR 250,000+ earned (100 pts)
 
@@ -56,6 +63,7 @@ A complete **gamification system** has been implemented for guides in TrailMate.
 ### 3. **Automatic Badge Awarding**
 
 Badges are automatically awarded when:
+
 - ✅ Booking status changes to "completed"
 - ✅ Guide accumulates trip count
 - ✅ Rating average updates
@@ -65,6 +73,7 @@ Badges are automatically awarded when:
 ### 4. **Points System**
 
 Each badge awards points:
+
 - Common: 10-40 pts
 - Rare: 50-75 pts
 - Epic: 80-150 pts
@@ -75,20 +84,25 @@ Each badge awards points:
 ## 📦 Files Created
 
 ### Data Models
+
 - `lib/db/models/badge.ts` - Badge definitions, types, interfaces
 
 ### Business Logic
+
 - `lib/utils/badge-system.ts` - Badge calculation, awarding, queries
 
 ### API Endpoints
+
 - `app/api/guides/[id]/badges/route.ts` - GET guide badges
 - `app/api/badges/leaderboard/route.ts` - GET badge leaderboard
 
 ### UI Components
+
 - `components/badges/badge-display.tsx` - Badge display components
 - `components/guides/guide-profile-badges.tsx` - Profile integration
 
 ### Updated Files
+
 - `app/api/bookings/[id]/route.ts` - Integrated badge awarding on completion
 
 ---
@@ -178,21 +192,23 @@ System checks 6 badge types:
 ## 🎨 UI Components
 
 ### BadgeDisplay
+
 Renders individual badge with icon and details
 
 ```typescript
-<BadgeDisplay 
-  badge={badge} 
+<BadgeDisplay
+  badge={badge}
   size="lg"        // sm | md | lg
   showDetails={true}
 />
 ```
 
 ### GuideBadgesShowcase
+
 Shows all guide badges with stats and filters
 
 ```typescript
-<GuideBadgesShowcase 
+<GuideBadgesShowcase
   guideId={guideId}
   limit={10}
   isCompact={false}
@@ -200,30 +216,33 @@ Shows all guide badges with stats and filters
 ```
 
 ### GuideProfileBadges
+
 Integrated on guide profile page
 
 ```typescript
-<GuideProfileBadges 
+<GuideProfileBadges
   guideId={guideId}
   compact={false}
 />
 ```
 
 ### BadgeLeaderboard
+
 Top guides ranked by badges and points
 
 ```typescript
-<BadgeLeaderboard 
+<BadgeLeaderboard
   category="milestones"    // optional filter
   limit={10}
 />
 ```
 
 ### BadgeNotification
+
 Toast notification when badge earned
 
 ```typescript
-<BadgeNotification 
+<BadgeNotification
   badge={newBadge}
   onDismiss={handleDismiss}
 />
@@ -234,6 +253,7 @@ Toast notification when badge earned
 ## 📊 API Endpoints
 
 ### Get Guide Badges
+
 ```bash
 GET /api/guides/{guideId}/badges
 
@@ -267,6 +287,7 @@ Response:
 ```
 
 ### Get Badge Leaderboard
+
 ```bash
 GET /api/badges/leaderboard?limit=10&category=milestones
 
@@ -298,17 +319,18 @@ When booking is marked complete:
 // app/api/bookings/[id]/route.ts
 
 if (body.status === "completed" && booking.guideId) {
-  const badgesAwarded = await checkAndAwardBadgesOnBookingComplete(db, id)
-  
+  const badgesAwarded = await checkAndAwardBadgesOnBookingComplete(db, id);
+
   return {
     booking: updatedBooking,
     badgesAwarded: badgesAwarded.newBadges,
-    badgeMessage: badgesAwarded.message
-  }
+    badgeMessage: badgesAwarded.message,
+  };
 }
 ```
 
 Response includes:
+
 - List of newly earned badges
 - Badge message explaining what was unlocked
 - Updated guide profile with new badge count
@@ -318,6 +340,7 @@ Response includes:
 ## 💻 Usage Examples
 
 ### Display Guide Badges on Profile
+
 ```typescript
 import { GuideProfileBadges } from '@/components/guides/guide-profile-badges'
 
@@ -332,20 +355,22 @@ export default function GuidePage({ params }) {
 ```
 
 ### Show Badge Leaderboard
+
 ```typescript
 import { BadgeLeaderboard } from '@/components/badges/badge-display'
 
 export default function LeaderboardPage() {
   return (
-    <BadgeLeaderboard 
-      category="milestones" 
-      limit={20} 
+    <BadgeLeaderboard
+      category="milestones"
+      limit={20}
     />
   )
 }
 ```
 
 ### Handle Badge Notification
+
 ```typescript
 import { BadgeNotification } from '@/components/badges/badge-display'
 import { useState } from 'react'
@@ -366,7 +391,7 @@ export default function GuideBookingComplete() {
   return (
     <>
       {newBadges.map(badge => (
-        <BadgeNotification 
+        <BadgeNotification
           key={badge._id}
           badge={badge}
           onDismiss={() => {}}
@@ -382,19 +407,21 @@ export default function GuideBookingComplete() {
 ## 🗄️ Database Setup
 
 ### Create Collections
+
 ```javascript
 // MongoDB
-db.createCollection("guide_badges")
-db.createCollection("badge_achievements")
+db.createCollection("guide_badges");
+db.createCollection("badge_achievements");
 ```
 
 ### Add Indexes (Recommended)
+
 ```javascript
 // For fast lookups
-db.guide_badges.createIndex({ guideId: 1 })
-db.guide_badges.createIndex({ badgeId: 1 })
-db.guide_badges.createIndex({ earnedAt: -1 })
-db.badge_achievements.createIndex({ guideId: 1 })
+db.guide_badges.createIndex({ guideId: 1 });
+db.guide_badges.createIndex({ badgeId: 1 });
+db.guide_badges.createIndex({ earnedAt: -1 });
+db.badge_achievements.createIndex({ guideId: 1 });
 ```
 
 ---
@@ -444,15 +471,15 @@ Award:
 
 ### Badge Categories Rationale
 
-| Category | Purpose |
-|----------|---------|
-| Milestones | Effort-based, easy to understand |
-| Ratings | Quality feedback |
-| Specialization | Helps matching algorithm |
-| Reliability | Builds trust |
-| Community | Encourages reviews |
-| Seasonal | Limited-time engagement |
-| Premium | High-value achievements |
+| Category       | Purpose                          |
+| -------------- | -------------------------------- |
+| Milestones     | Effort-based, easy to understand |
+| Ratings        | Quality feedback                 |
+| Specialization | Helps matching algorithm         |
+| Reliability    | Builds trust                     |
+| Community      | Encourages reviews               |
+| Seasonal       | Limited-time engagement          |
+| Premium        | High-value achievements          |
 
 ---
 
@@ -491,6 +518,7 @@ Award:
 ## 🧪 Testing
 
 ### Test Badge Awarding
+
 ```bash
 # 1. Create guide
 # 2. Create and complete booking
@@ -504,6 +532,7 @@ curl http://localhost:3000/api/guides/{guideId}/badges
 ```
 
 ### Test Leaderboard
+
 ```bash
 curl http://localhost:3000/api/badges/leaderboard?category=milestones&limit=10
 ```
@@ -530,15 +559,15 @@ curl http://localhost:3000/api/badges/leaderboard?category=milestones&limit=10
 
 ## 🎓 Key Files Reference
 
-| File | Purpose |
-|------|---------|
-| `lib/db/models/badge.ts` | Badge definitions and interfaces |
-| `lib/utils/badge-system.ts` | Core badge logic (270+ lines) |
-| `app/api/guides/[id]/badges/route.ts` | Badge query endpoint |
-| `app/api/badges/leaderboard/route.ts` | Leaderboard endpoint |
-| `components/badges/badge-display.tsx` | Badge UI components |
-| `components/guides/guide-profile-badges.tsx` | Profile integration |
-| `app/api/bookings/[id]/route.ts` | Updated with badge awarding |
+| File                                         | Purpose                          |
+| -------------------------------------------- | -------------------------------- |
+| `lib/db/models/badge.ts`                     | Badge definitions and interfaces |
+| `lib/utils/badge-system.ts`                  | Core badge logic (270+ lines)    |
+| `app/api/guides/[id]/badges/route.ts`        | Badge query endpoint             |
+| `app/api/badges/leaderboard/route.ts`        | Leaderboard endpoint             |
+| `components/badges/badge-display.tsx`        | Badge UI components              |
+| `components/guides/guide-profile-badges.tsx` | Profile integration              |
+| `app/api/bookings/[id]/route.ts`             | Updated with badge awarding      |
 
 ---
 
@@ -575,4 +604,3 @@ A: Not directly, but they increase guide visibility and reputation, potentially 
 ## 🎉 Summary
 
 A **complete gamification system** with 25+ badge types, automatic awarding, leaderboards, and beautiful UI components has been implemented. Guides are motivated to complete trips, maintain quality, specialize, and build their reputation through visible achievements.
-

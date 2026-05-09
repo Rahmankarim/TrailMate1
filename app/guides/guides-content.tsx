@@ -37,6 +37,7 @@ export function GuidesContent() {
   const [sortBy, setSortBy] = useState("Recommended")
   const [guides, setGuides] = useState<Guide[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const heroBackground = "/pakistani-mountain-guide-professional-portrait.jpg"
 
   // Fetch guides from API
   useEffect(() => {
@@ -116,17 +117,22 @@ export function GuidesContent() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="pt-24 pb-12 px-6 bg-secondary">
-        <div className="max-w-7xl mx-auto">
+      <section className="relative overflow-hidden pt-24 pb-12 px-6">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${heroBackground})` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-foreground/85 via-foreground/60 to-foreground/25" />
+        <div className="relative max-w-7xl mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4 text-balance">Expert Local Guides</h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto text-pretty">
+            <h1 className="text-4xl md:text-5xl font-bold text-background mb-4 text-balance">Expert Local Guides</h1>
+            <p className="text-xl text-background/85 max-w-2xl mx-auto text-pretty">
               Connect with certified guides who know every trail, peak, and hidden gem
             </p>
           </div>
 
           {/* Search and Filters */}
-          <div className="bg-card rounded-2xl p-6 shadow-lg border border-border">
+          <div className="bg-background/90 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-background/20">
             <div className="flex flex-col lg:flex-row gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />

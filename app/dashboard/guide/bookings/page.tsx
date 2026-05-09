@@ -18,13 +18,17 @@ import { Label } from "@/components/ui/label"
 
 interface Booking {
   _id: string
-  destination: {
+  bookingType?: string
+  tourName?: string
+  destination?: {
     name: string
     location: string
     coverImage?: string
   }
   travelerName: string
   travelerEmail: string
+  travelerPhone?: string
+  userAvatar?: string
   startDate: string
   endDate: string
   guests: number
@@ -92,7 +96,7 @@ export default function GuideBookingsPage() {
 
   const fetchPersonalBookings = async () => {
     try {
-      const res = await fetch("/api/bookings?bookingType=destination_booking", {
+      const res = await fetch("/api/bookings?type=guide&paginate=false", {
         credentials: "include",
       })
       if (res.ok) {
@@ -157,6 +161,7 @@ export default function GuideBookingsPage() {
         }
 
         fetchBookings()
+        fetchPersonalBookings()
       } else {
         const error = await res.json()
         toast({
@@ -438,6 +443,12 @@ export default function GuideBookingsPage() {
     }
   }
 
+  const getBookingTitle = (booking: Booking) => booking.destination?.name || booking.tourName || "Booking"
+
+  const getBookingLocation = (booking: Booking) => booking.destination?.location || booking.travelerName || "Client"
+
+  const getBookingImage = (booking: Booking) => booking.destination?.coverImage || booking.userAvatar || "/placeholder.svg"
+
   return (
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar role="guide" user={user ? { name: user.firstName + ' ' + user.lastName, email: user.email, avatar: user.avatar } : undefined} />
@@ -580,16 +591,16 @@ export default function GuideBookingsPage() {
                     >
                       <div className="flex items-start gap-4">
                         <Avatar className="h-16 w-16 rounded-lg">
-                          <AvatarImage src={booking.destination?.coverImage} alt={booking.destination?.name} className="object-cover" />
+                          <AvatarImage src={getBookingImage(booking)} alt={getBookingTitle(booking)} className="object-cover" />
                           <AvatarFallback className="rounded-lg">
-                            {booking.destination?.name?.charAt(0) || "D"}
+                            {getBookingTitle(booking).charAt(0) || "B"}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
                           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div className="flex-1 space-y-2">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <h3 className="font-semibold">{booking.destination?.name || "Unknown Tour"}</h3>
+                                <h3 className="font-semibold">{getBookingTitle(booking)}</h3>
                                 <Badge className={getStatusColor(booking.status)}>
                                   {booking.status}
                                 </Badge>
@@ -603,6 +614,10 @@ export default function GuideBookingsPage() {
                                 <span className="flex items-center gap-1">
                                   <Users className="h-4 w-4" />
                                   {booking.travelerName}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="h-4 w-4" />
+                                  {getBookingLocation(booking)}
                                 </span>
                                 <span className="flex items-center gap-1">
                                   <Calendar className="h-4 w-4" />
@@ -680,12 +695,12 @@ export default function GuideBookingsPage() {
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={booking.destination?.coverImage} alt={booking.destination?.name} />
-                          <AvatarFallback>{booking.destination?.name?.charAt(0) || "D"}</AvatarFallback>
+                          <AvatarImage src={getBookingImage(booking)} alt={getBookingTitle(booking)} />
+                          <AvatarFallback>{getBookingTitle(booking).charAt(0) || "B"}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium text-foreground">{booking.destination?.name || "Destination"}</p>
-                          <p className="text-sm text-muted-foreground">{booking.destination?.location || "Location"}</p>
+                          <p className="font-medium text-foreground">{getBookingTitle(booking)}</p>
+                          <p className="text-sm text-muted-foreground">{getBookingLocation(booking)}</p>
                         </div>
                       </div>
                       <div className="flex gap-2">
@@ -807,11 +822,11 @@ export default function GuideBookingsPage() {
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={booking.destination?.coverImage} alt={booking.destination?.name} />
-                          <AvatarFallback>{booking.destination?.name?.charAt(0) || "D"}</AvatarFallback>
+                          <AvatarImage src={getBookingImage(booking)} alt={getBookingTitle(booking)} />
+                          <AvatarFallback>{getBookingTitle(booking).charAt(0) || "B"}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium text-foreground">{booking.destination?.name || "Destination"}</p>
+                          <p className="font-medium text-foreground">{getBookingTitle(booking)}</p>
                           <p className="text-sm text-muted-foreground">
                             {formatDate(booking.startDate, booking.endDate)}
                           </p>

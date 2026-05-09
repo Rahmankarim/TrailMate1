@@ -23,25 +23,49 @@ export async function GET(request: NextRequest) {
 
     // If slug is provided, fetch by slug
     if (slug) {
-      query.slug = slug
-      const destination = await collection.findOne(query)
-      
+      // Use aggregation to include owner/company info
+      const pipeline: Record<string, unknown>[] = [
+        { $match: { slug } },
+        {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "owner",
+          },
+        },
+        { $unwind: { path: "$owner", preserveNullAndEmptyArrays: true } },
+        {
+          $addFields: {
+            ownerName: {
+              $ifNull: [
+                "$owner.companyProfile.companyName",
+                { $concat: ["$owner.firstName", " ", "$owner.lastName"] },
+              ],
+            },
+          },
+        },
+      ]
+
+      const results = await collection.aggregate(pipeline).toArray()
+      const destination = results[0]
+
       if (!destination) {
-        return NextResponse.json({ 
-          success: false, 
-          message: "Destination not found" 
+        return NextResponse.json({
+          success: false,
+          message: "Destination not found",
         }, { status: 404 })
       }
-      
+
       // Increment view count
       await collection.updateOne(
         { _id: destination._id },
         { $inc: { views: 1 } }
       )
-      
-      return NextResponse.json({ 
-        success: true, 
-        destinations: [destination] 
+
+      return NextResponse.json({
+        success: true,
+        destinations: [destination],
       })
     }
 
@@ -84,13 +108,34 @@ export async function GET(request: NextRequest) {
     // Get sort params
     const sort = getSortParams(searchParams)
 
-    // Fetch destinations with pagination
-    const destinations = await collection
-      .find(query)
-      .sort(sort)
-      .skip(skip)
-      .limit(limit)
-      .toArray()
+    // Fetch destinations with pagination and include owner/company info
+    const pipeline: Record<string, unknown>[] = [
+      { $match: query },
+      { $sort: sort },
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "owner",
+        },
+      },
+      { $unwind: { path: "$owner", preserveNullAndEmptyArrays: true } },
+      {
+        $addFields: {
+          ownerName: {
+            $ifNull: [
+              "$owner.companyProfile.companyName",
+              { $concat: ["$owner.firstName", " ", "$owner.lastName"] },
+            ],
+          },
+        },
+      },
+    ]
+
+    const destinations = await collection.aggregate(pipeline).toArray()
 
     // If userOnly is false (public listing), return paginated response
     if (!userOnly) {

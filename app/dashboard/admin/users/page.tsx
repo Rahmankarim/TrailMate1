@@ -14,10 +14,11 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import AdminAccessGuard from "@/components/dashboard/admin-access-guard"
 import DashboardSidebar from "@/components/dashboard/sidebar"
 import DashboardTopbar from "@/components/dashboard/topbar"
 import { useAuth } from "@/contexts/auth-context"
-import { Users, Search, Shield, Ban, CheckCircle, Loader2, Mail } from "lucide-react"
+import { Users, Search, Shield, Ban, CheckCircle, Loader2, Mail, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 interface User {
@@ -91,6 +92,40 @@ export default function AdminUsersPage() {
     }
   }
 
+  const handleDeleteUser = async (userId: string, displayName: string) => {
+    if (!window.confirm(`Delete ${displayName}? This will permanently remove the account and related records.`)) {
+      return
+    }
+
+    setProcessingId(userId)
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: "DELETE",
+        credentials: "include",
+      })
+
+      if (response.ok) {
+        setUsers(users.filter((u) => u._id !== userId))
+        toast({
+          title: "Success",
+          description: "User deleted successfully",
+        })
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || "Failed to delete user")
+      }
+    } catch (error) {
+      console.error("Error deleting user:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete user",
+        variant: "destructive",
+      })
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
   const filteredUsers = users.filter(
     (u) =>
       u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -105,6 +140,7 @@ export default function AdminUsersPage() {
   }
 
   return (
+    <AdminAccessGuard>
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar
         role="admin"
@@ -225,21 +261,42 @@ export default function AdminUsersPage() {
                             {new Date(user.createdAt).toLocaleDateString()}
                           </TableCell>
                           <TableCell>
-                            <Button
-                              variant={user.isActive ? "destructive" : "default"}
-                              size="sm"
-                              onClick={() => handleToggleStatus(user._id, user.isActive)}
-                              disabled={processingId === user._id || user.role === "admin"}
-                            >
-                              {processingId === user._id ? (
-                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                              ) : user.isActive ? (
-                                <Ban className="h-4 w-4 mr-2" />
-                              ) : (
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                              )}
-                              {user.isActive ? "Deactivate" : "Activate"}
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant={user.isActive ? "destructive" : "default"}
+                                size="sm"
+                                onClick={() => handleToggleStatus(user._id, user.isActive)}
+                                disabled={processingId === user._id || user.role === "admin"}
+                              >
+                                {processingId === user._id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                ) : user.isActive ? (
+                                  <Ban className="h-4 w-4 mr-2" />
+                                ) : (
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                )}
+                                {user.isActive ? "Deactivate" : "Activate"}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                                onClick={() =>
+                                  handleDeleteUser(
+                                    user._id,
+                                    `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email
+                                  )
+                                }
+                                disabled={processingId === user._id || user.role === "admin"}
+                              >
+                                {processingId === user._id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                )}
+                                Delete
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -252,5 +309,6 @@ export default function AdminUsersPage() {
         </main>
       </div>
     </div>
+    </AdminAccessGuard>
   )
 }

@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/hooks/use-toast"
+import { WeatherWidget } from "@/components/destinations/weather-widget"
 import {
   Star,
   MapPin,
@@ -38,6 +39,8 @@ interface Destination {
   slug: string
   location: string
   region: string
+  ownerName?: string
+  owner?: any
   rating?: number
   totalReviews?: number
   price: number
@@ -267,6 +270,18 @@ export default function DestinationDetailPage() {
                 <MapPin className="h-5 w-5" />
                 <span>{destination.location}</span>
               </div>
+              {destination.ownerName && (
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  {destination.owner && destination.owner._id ? (
+                    <Link href={`/companies/${destination.owner._id}` } className="underline">
+                      {destination.ownerName}
+                    </Link>
+                  ) : (
+                    <span>{destination.ownerName}</span>
+                  )}
+                </div>
+              )}
               {destination.rating && (
                 <div className="flex items-center gap-2">
                   <Star className="h-5 w-5 text-yellow-400 fill-current" />
@@ -447,8 +462,18 @@ export default function DestinationDetailPage() {
               </Tabs>
             </div>
 
-            {/* Right Sidebar - Booking Card */}
-            <div className="lg:col-span-1">
+            {/* Right Sidebar - Weather & Booking Card */}
+            <div className="lg:col-span-1 space-y-6">
+              {/* Weather Widget */}
+              <div className="sticky top-24">
+                <WeatherWidget
+                  location={destination.location}
+                  region={destination.region}
+                  country="PK"
+                />
+              </div>
+
+              {/* Booking Card */}
               <Card className="sticky top-24 shadow-lg">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-6">

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
+import AdminAccessGuard from "@/components/dashboard/admin-access-guard"
 import DashboardSidebar from "@/components/dashboard/sidebar"
 import DashboardTopbar from "@/components/dashboard/topbar"
 import { useAuth } from "@/contexts/auth-context"
@@ -43,6 +44,7 @@ export default function AdminDestinationsPage() {
   )
 
   return (
+    <AdminAccessGuard>
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar
         role="admin"
@@ -130,5 +132,6 @@ export default function AdminDestinationsPage() {
         </main>
       </div>
     </div>
+    </AdminAccessGuard>
   )
 }

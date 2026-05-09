@@ -302,3 +302,4 @@ PERFORMANCE OPTIMIZATION
    - Max 500 tokens per LLM response
    - Max 100 guides per match request
 
+```

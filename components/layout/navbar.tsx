@@ -20,6 +20,7 @@ const navLinks = [
   { href: "/", label: "Home" },
   { href: "/destinations", label: "Destinations" },
   { href: "/guides", label: "Guides" },
+  { href: "/companies", label: "Companies" },
   { href: "/blog", label: "Blog" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
@@ -134,6 +135,11 @@ export default function Navbar() {
               </DropdownMenu>
             ) : (
               <>
+                <Link href="/adminsignin">
+                  <Button variant="outline" size="sm" className="border-foreground/20 bg-transparent">
+                    Admin Login
+                  </Button>
+                </Link>
                 <Link href="/signin">
                   <Button variant="ghost" size="sm">
                     Sign In
@@ -215,6 +221,11 @@ export default function Navbar() {
                     </>
                   ) : (
                     <>
+                      <Link href="/adminsignin" onClick={() => setIsOpen(false)}>
+                        <Button variant="outline" className="w-full bg-transparent">
+                          Admin Login
+                        </Button>
+                      </Link>
                       <Link href="/signin" onClick={() => setIsOpen(false)}>
                         <Button variant="outline" className="w-full bg-transparent">
                           Sign In

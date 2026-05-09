@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import AdminAccessGuard from "@/components/dashboard/admin-access-guard"
 import DashboardSidebar from "@/components/dashboard/sidebar"
 import DashboardTopbar from "@/components/dashboard/topbar"
 import { useAuth } from "@/contexts/auth-context"
@@ -83,6 +84,7 @@ export default function AdminAnalyticsPage() {
   }
 
   return (
+    <AdminAccessGuard>
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar
         role="admin"
@@ -319,5 +321,6 @@ export default function AdminAnalyticsPage() {
         </main>
       </div>
     </div>
+    </AdminAccessGuard>
   )
 }

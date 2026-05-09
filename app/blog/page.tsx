@@ -36,17 +36,23 @@ export default async function BlogPage() {
   const categories = getAllCategories()
   const regularPosts = blogPosts.filter((post) => !post.featured)
   const guideStories = await fetchGuideStories()
+  const heroBackground = "/photographer-camera-mountain-landscape-golden-hour.jpg"
 
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="pt-24 pb-12 px-6 bg-secondary">
-        <div className="max-w-7xl mx-auto">
+      <section className="relative overflow-hidden pt-24 pb-12 px-6">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${heroBackground})` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-foreground/85 via-foreground/60 to-foreground/25" />
+        <div className="relative max-w-7xl mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4 text-balance">
+            <h1 className="text-4xl md:text-5xl font-bold text-background mb-4 text-balance">
               Adventure Stories & Tips
             </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto text-pretty">
+            <p className="text-xl text-background/85 max-w-2xl mx-auto text-pretty">
               Expert advice, inspiring stories, and practical guides for your next adventure
             </p>
           </div>
@@ -55,18 +61,22 @@ export default async function BlogPage() {
           <div className="max-w-xl mx-auto">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input placeholder="Search articles..." className="pl-12 h-12 bg-card" />
+              <Input placeholder="Search articles..." className="pl-12 h-12 bg-background/90 backdrop-blur-md" />
             </div>
           </div>
 
           {/* Categories */}
-          <div className="flex flex-wrap justify-center gap-2 mt-6">
+          <div className="relative z-10 flex flex-wrap justify-center gap-2 mt-6">
             {categories.map((category) => (
               <Button
                 key={category}
                 variant={category === "All" ? "default" : "outline"}
                 size="sm"
-                className={category === "All" ? "bg-foreground text-background" : "bg-transparent"}
+                className={
+                  category === "All"
+                    ? "bg-foreground text-background border-foreground shadow-md hover:bg-foreground/90"
+                    : "bg-background/90 text-foreground border-background/30 shadow-md backdrop-blur-sm hover:bg-background"
+                }
               >
                 {category}
               </Button>

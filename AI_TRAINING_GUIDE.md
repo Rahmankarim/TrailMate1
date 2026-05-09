@@ -37,12 +37,14 @@ node lib/ai/fine-tune-grok.js
 ### 4. Monitor Progress
 
 The script will:
+
 - Upload your training data to Grok
 - Start a fine-tuning job
 - Poll for completion (this typically takes 10-60 minutes)
 - Display the fine-tuned model ID when complete
 
 Example output:
+
 ```
 🚀 TrailMate AI Fine-tuning for Grok
 =====================================
@@ -89,7 +91,22 @@ To add more training examples:
 ### Example: Adding a New Training Example
 
 ```jsonl
-{"messages": [{"role": "system", "content": "You are TrailMate, a helpful Pakistan travel assistant..."}, {"role": "user", "content": "best trekking routes in hunza"}, {"role": "assistant", "content": "Popular routes: Eagle's Nest, Rakaposhi Base Camp, and Attabad Lake Circuit. Each offers unique views..."}]}
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are TrailMate, a helpful Pakistan travel assistant..."
+    },
+    {
+      "role": "user",
+      "content": "best trekking routes in hunza"
+    },
+    {
+      "role": "assistant",
+      "content": "Popular routes: Eagle's Nest, Rakaposhi Base Camp, and Attabad Lake Circuit. Each offers unique views..."
+    }
+  ]
+}
 ```
 
 ## Advanced Configuration
@@ -112,9 +129,9 @@ Change the model in the script:
 ```javascript
 body: JSON.stringify({
   training_file: fileId,
-  model: 'grok-4.20-reasoning', // or other Grok models
+  model: "grok-4.20-reasoning", // or other Grok models
   // ...
-})
+});
 ```
 
 ## Deployment
@@ -126,10 +143,12 @@ After fine-tuning completes, the model ID is saved in `lib/ai/fine-tuned-model.t
 ### 2. Automatic Usage
 
 The chatbot automatically detects and uses the fine-tuned model if:
+
 - Model file exists and is valid
 - Status is "ready"
 
 The LLM provider logs:
+
 ```
 [Grok] Using fine-tuned model: ft-grok-2-xxxxx
 ```
@@ -144,9 +163,9 @@ To force using the default model, temporarily rename the fine-tuned model file o
 
 ```javascript
 // In your chat endpoint or validation script
-import { fineTunedModelConfig } from '@/lib/ai/fine-tuned-model'
+import { fineTunedModelConfig } from "@/lib/ai/fine-tuned-model";
 
-console.log(fineTunedModelConfig)
+console.log(fineTunedModelConfig);
 // Output: { modelId: "ft-grok-2-xxxxx", timestamp: "2025-01-15...", status: "ready" }
 ```
 
@@ -166,19 +185,23 @@ Expected response should reflect training data patterns.
 ## Troubleshooting
 
 ### "API key not found"
+
 - Verify API key is set: `echo $GROK_API_KEY`
 - Try in a new terminal window after setting the variable
 
 ### "File upload failed"
+
 - Check file size: `wc -l lib/ai/training-data.jsonl`
 - Verify JSONL format: Each line must be valid JSON
 
 ### "Fine-tune job failed"
+
 - Check error message in terminal output
 - Review training data for format issues
 - Verify API key has fine-tuning permissions
 
 ### "Fine-tuned model not being used"
+
 - Check `lib/ai/fine-tuned-model.ts` exists and is valid JSON
 - Verify `status: "ready"` in the config
 - Check server logs for `[Grok] Using fine-tuned model:` message
@@ -204,6 +227,7 @@ To expand the model's knowledge base:
 5. **Complex scenarios**: Add examples of multi-step booking and payment flows
 
 Example workflow:
+
 ```bash
 # 1. Update training data
 vi lib/ai/training-data.jsonl
@@ -229,6 +253,7 @@ Training 20-30 examples (≈5000 tokens) costs roughly $0.15-$0.20.
 ## Support
 
 For issues:
+
 1. Check Grok API documentation: https://console.x.ai/docs
 2. Review fine-tuning logs in terminal output
 3. Check `lib/ai/fine-tuned-model.ts` for model configuration

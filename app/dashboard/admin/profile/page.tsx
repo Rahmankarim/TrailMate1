@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import AdminAccessGuard from "@/components/dashboard/admin-access-guard"
 import DashboardSidebar from "@/components/dashboard/sidebar"
 import DashboardTopbar from "@/components/dashboard/topbar"
 import { useAuth } from "@/contexts/auth-context"
@@ -173,6 +174,7 @@ export default function AdminProfilePage() {
   }
 
   return (
+    <AdminAccessGuard>
     <div className="flex min-h-screen bg-secondary">
       <DashboardSidebar
         role="admin"
@@ -393,5 +395,6 @@ export default function AdminProfilePage() {
         </main>
       </div>
     </div>
+    </AdminAccessGuard>
   )
 }

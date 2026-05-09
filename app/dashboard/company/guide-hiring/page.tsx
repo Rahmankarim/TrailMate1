@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
+import { Label } from "@/components/ui/label"
 import DashboardSidebar from "@/components/dashboard/sidebar"
 import DashboardTopbar from "@/components/dashboard/topbar"
 import { useAuth } from "@/contexts/auth-context"
@@ -34,6 +35,7 @@ import {
   ExternalLink,
   UserCheck,
   Award,
+  Upload,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
@@ -190,7 +192,7 @@ function HiringCard({
               <MessageCircle className="h-4 w-4 mr-2" />
               {isCompleted ? "Review" : "Message"}
             </Button>
-            {!isCompleted && !isConfirmed && hiring.paymentStatus !== "paid" && (
+            {hiring.paymentStatus !== "paid" && hiring.status !== "cancelled" && hiring.status !== "completed" && (
               <Button size="sm" onClick={() => onPay(hiring)} disabled={processingId === hiring._id}>
                 {processingId === hiring._id ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -242,6 +244,15 @@ export default function GuideHiringPage() {
   const [messageHiringOpen, setMessageHiringOpen] = useState(false)
   const [hiringMessageText, setHiringMessageText] = useState("")
   const [isHiringSending, setIsHiringSending] = useState(false)
+
+  // ── Payment dialog ──
+  const [paymentOpen, setPaymentOpen] = useState(false)
+  const [selectedPaymentHiring, setSelectedPaymentHiring] = useState<GuideHiring | null>(null)
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false)
+  const [providerBankAccounts, setProviderBankAccounts] = useState<any[]>([])
+  const [providerName, setProviderName] = useState("")
+  const [screenshot, setScreenshot] = useState<string | null>(null)
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null)
 
   // ─── Data fetching ────────────────────────────────────────────────────────
 
@@ -397,24 +408,110 @@ export default function GuideHiringPage() {
       toast({ title: "Already Paid", description: "This hiring has already been paid" })
       return
     }
-    setProcessingId(hiring._id)
+
+    setSelectedPaymentHiring(hiring)
+    setScreenshot(null)
+    setScreenshotFile(null)
+
     try {
-      const res = await fetch("/api/payments", {
+      const res = await fetch(`/api/provider-bank-accounts?bookingId=${hiring._id}`, {
+        credentials: "include",
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        setProviderBankAccounts(data.bankAccounts || [])
+        setProviderName(data.providerName || hiring.guideName || "Service Provider")
+      } else {
+        setProviderBankAccounts([])
+        setProviderName(hiring.guideName || "Service Provider")
+      }
+    } catch (error) {
+      console.error("Error fetching bank accounts:", error)
+      setProviderBankAccounts([])
+      setProviderName(hiring.guideName || "Service Provider")
+    }
+
+    setPaymentOpen(true)
+  }
+
+  const handleScreenshotUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please upload an image smaller than 5MB",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setScreenshot(reader.result as string)
+      setScreenshotFile(file)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const submitPaymentProof = async () => {
+    if (!selectedPaymentHiring) return
+
+    if (!screenshot) {
+      toast({
+        title: "Screenshot Required",
+        description: "Please upload payment screenshot",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (providerBankAccounts.length === 0) {
+      toast({
+        title: "No Bank Account",
+        description: "Service provider hasn't added bank details yet",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsProcessingPayment(true)
+    try {
+      const response = await fetch("/api/payment-proof", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ bookingId: hiring._id, amount: hiring.totalPrice, type: "guide_hiring" }),
+        body: JSON.stringify({
+          bookingId: selectedPaymentHiring._id,
+          screenshot,
+          accountDetails: providerBankAccounts[0],
+        }),
       })
-      if (res.ok) {
-        const data = await res.json()
-        if (data.paymentUrl) window.location.href = data.paymentUrl
-      } else {
-        toast({ title: "Error", description: "Failed to process payment", variant: "destructive" })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Payment submission failed")
       }
-    } catch {
-      toast({ title: "Error", description: "Something went wrong", variant: "destructive" })
+
+      toast({
+        title: "Payment Proof Submitted!",
+        description: "Your payment is being verified. You'll be notified once confirmed.",
+      })
+      setPaymentOpen(false)
+      setScreenshot(null)
+      setScreenshotFile(null)
+      fetchHirings()
+    } catch (error) {
+      console.error("Payment error:", error)
+      toast({
+        title: "Submission Failed",
+        description: error instanceof Error ? error.message : "Failed to submit payment proof",
+        variant: "destructive",
+      })
     } finally {
-      setProcessingId(null)
+      setIsProcessingPayment(false)
     }
   }
 
@@ -423,19 +520,19 @@ export default function GuideHiringPage() {
   const getStatusBadge = (status: string) => {
     const map: Record<
       string,
-      { variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ElementType }
+      { variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ElementType; label: string }
     > = {
-      pending: { variant: "secondary", icon: Clock },
-      confirmed: { variant: "default", icon: CheckCircle },
-      completed: { variant: "outline", icon: CheckCircle },
-      cancelled: { variant: "destructive", icon: XCircle },
+      pending: { variant: "secondary", icon: Clock, label: "Pending" },
+      confirmed: { variant: "default", icon: CheckCircle, label: "Accepted" },
+      completed: { variant: "outline", icon: CheckCircle, label: "Completed" },
+      cancelled: { variant: "destructive", icon: XCircle, label: "Cancelled" },
     }
     const cfg = map[status] || map.pending
     const Icon = cfg.icon
     return (
       <Badge variant={cfg.variant}>
         <Icon className="h-3 w-3 mr-1" />
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {cfg.label}
       </Badge>
     )
   }
@@ -458,6 +555,7 @@ export default function GuideHiringPage() {
   const availableCount = guides.filter((g) => g.availability?.available).length
   const pendingHirings = hirings.filter((h) => h.status === "pending")
   const confirmedHirings = hirings.filter((h) => h.status === "confirmed")
+  const cancelledHirings = hirings.filter((h) => h.status === "cancelled")
   const completedHirings = hirings.filter((h) => h.status === "completed")
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -551,7 +649,6 @@ export default function GuideHiringPage() {
                       </Button>
                       <Button
                         variant="outline"
-                        title="Clear filters"
                         onClick={() => {
                           setSearchQuery("")
                           setLocationFilter("")
@@ -607,10 +704,7 @@ export default function GuideHiringPage() {
                               <div className="flex items-center gap-2 mb-1 flex-wrap">
                                 <h3 className="font-bold text-base truncate">{guide.name}</h3>
                                 {guide.isVerified && (
-                                  <Award
-                                    className="h-4 w-4 text-blue-500 shrink-0"
-                                    title="Verified guide"
-                                  />
+                                  <Award className="h-4 w-4 text-blue-500 shrink-0" />
                                 )}
                               </div>
                               <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
@@ -799,7 +893,7 @@ export default function GuideHiringPage() {
 
                     {confirmedHirings.length > 0 && (
                       <section>
-                        <h2 className="text-xl font-bold mb-4">Confirmed Hirings</h2>
+                        <h2 className="text-xl font-bold mb-4">Accepted Hirings</h2>
                         <div className="space-y-4">
                           {confirmedHirings.map((hiring) => (
                             <HiringCard
@@ -811,6 +905,25 @@ export default function GuideHiringPage() {
                               onMessage={handleOpenHiringMessage}
                               onPay={handleProcessPayment}
                               isConfirmed
+                            />
+                          ))}
+                        </div>
+                      </section>
+                    )}
+
+                    {cancelledHirings.length > 0 && (
+                      <section>
+                        <h2 className="text-xl font-bold mb-4">Cancelled Hirings</h2>
+                        <div className="space-y-4">
+                          {cancelledHirings.map((hiring) => (
+                            <HiringCard
+                              key={hiring._id}
+                              hiring={hiring}
+                              processingId={processingId}
+                              getStatusBadge={getStatusBadge}
+                              getPaymentBadge={getPaymentBadge}
+                              onMessage={handleOpenHiringMessage}
+                              onPay={handleProcessPayment}
                             />
                           ))}
                         </div>
@@ -947,6 +1060,156 @@ export default function GuideHiringPage() {
                   Send Message
                 </Button>
               </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Payment Dialog ── */}
+      <Dialog open={paymentOpen} onOpenChange={setPaymentOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Complete Payment</DialogTitle>
+            <DialogDescription>
+              Transfer payment to the provider's account and upload screenshot.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedPaymentHiring && (
+            <div className="space-y-6">
+              <div className="p-4 bg-muted rounded-lg space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Guide:</span>
+                  <span className="font-medium">{selectedPaymentHiring.guideName || "N/A"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Tour:</span>
+                  <span className="font-medium">{selectedPaymentHiring.tourName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Duration:</span>
+                  <span className="font-medium">
+                    {new Date(selectedPaymentHiring.startDate).toLocaleDateString()} – {new Date(selectedPaymentHiring.endDate).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Employees:</span>
+                  <span className="font-medium">{selectedPaymentHiring.employees}</span>
+                </div>
+                <div className="flex justify-between border-t pt-2">
+                  <span className="text-lg font-semibold">Total Amount:</span>
+                  <span className="text-2xl font-bold text-blue-600">PKR {selectedPaymentHiring.totalPrice.toLocaleString()}</span>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">Transfer to {providerName}'s Account:</Label>
+                {providerBankAccounts.length === 0 ? (
+                  <div className="p-4 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      Service provider hasn't added bank details yet. Please contact them.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {providerBankAccounts.map((account: any, idx: number) => (
+                      <div key={idx} className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <div className="flex items-start gap-3">
+                          <DollarSign className="h-5 w-5 text-blue-600 mt-1" />
+                          <div className="flex-1 space-y-2">
+                            <div>
+                              <p className="font-semibold text-foreground">{account.bankName}</p>
+                              <p className="text-sm text-muted-foreground mt-1">Account Title: {account.accountTitle}</p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div>
+                                <Label className="text-xs text-muted-foreground">Account Number</Label>
+                                <p className="font-mono font-medium">{account.accountNumber}</p>
+                              </div>
+                              {account.iban && (
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">IBAN</Label>
+                                  <p className="font-mono font-medium text-xs">{account.iban}</p>
+                                </div>
+                              )}
+                              {account.branchCode && (
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Branch Code</Label>
+                                  <p className="font-mono font-medium">{account.branchCode}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="screenshot" className="text-base font-semibold">Upload Payment Screenshot</Label>
+                <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                  {screenshot ? (
+                    <div className="space-y-3">
+                      <div className="relative inline-block">
+                        <img src={screenshot} alt="Payment screenshot" className="max-h-48 rounded-lg mx-auto" />
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute -top-2 -right-2 h-6 w-6"
+                          onClick={() => {
+                            setScreenshot(null)
+                            setScreenshotFile(null)
+                          }}
+                        >
+                          <XCircle className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="flex items-center justify-center gap-2 text-sm text-green-600">
+                        <CheckCircle className="h-4 w-4" />
+                        <span>{screenshotFile?.name}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Upload className="h-10 w-10 mx-auto text-muted-foreground" />
+                      <div>
+                        <label htmlFor="screenshot" className="cursor-pointer">
+                          <span className="text-blue-600 hover:text-blue-700 font-medium">Click to upload</span>
+                          <span className="text-muted-foreground"> or drag and drop</span>
+                        </label>
+                        <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 5MB</p>
+                      </div>
+                      <input
+                        id="screenshot"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleScreenshotUpload}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Button
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={submitPaymentProof}
+                disabled={isProcessingPayment || !screenshot || providerBankAccounts.length === 0}
+              >
+                {isProcessingPayment ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Submitting Payment Proof...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Submit Payment Proof
+                  </>
+                )}
+              </Button>
             </div>
           )}
         </DialogContent>

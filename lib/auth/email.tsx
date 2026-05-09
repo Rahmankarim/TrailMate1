@@ -14,6 +14,10 @@ const createTransporter = () => {
   })
 }
 
+function getFromAddress() {
+  return process.env.FROM_EMAIL || process.env.SMTP_USER
+}
+
 // Generate a random verification token
 export function generateVerificationToken(): string {
   return crypto.randomBytes(32).toString("hex")
@@ -329,5 +333,70 @@ export async function sendWelcomeEmail(email: string, firstName: string): Promis
     console.log(`Welcome email sent to ${email}`)
   } catch (error) {
     console.error("Error sending welcome email:", error)
+  }
+}
+
+export async function sendContactFormEmail(input: {
+  firstName: string
+  lastName: string
+  email: string
+  phone?: string
+  inquiryType?: string
+  message: string
+}): Promise<void> {
+  const transporter = createTransporter()
+  const inbox = process.env.CONTACT_INBOX_EMAIL || "infobytrailmate@gmail.com"
+
+  const mailOptions = {
+    from: `"TrailMate Contact Form" <${getFromAddress()}>`,
+    to: inbox,
+    replyTo: input.email,
+    subject: `Contact Form: ${input.inquiryType || "General Inquiry"}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Contact Form Submission</title>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
+          <table role="presentation" style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td align="center" style="padding: 40px 0;">
+                <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                  <tr>
+                    <td style="padding: 32px; background-color: #1a1a1a; color: #ffffff; border-radius: 8px 8px 0 0;">
+                      <h1 style="margin: 0; font-size: 24px;">New Contact Message</h1>
+                      <p style="margin: 8px 0 0; color: #cccccc; font-size: 14px;">TrailMate contact form submission</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 32px; color: #1a1a1a;">
+                      <p style="margin: 0 0 12px;"><strong>Name:</strong> ${input.firstName} ${input.lastName}</p>
+                      <p style="margin: 0 0 12px;"><strong>Email:</strong> ${input.email}</p>
+                      <p style="margin: 0 0 12px;"><strong>Phone:</strong> ${input.phone || "Not provided"}</p>
+                      <p style="margin: 0 0 20px;"><strong>Inquiry Type:</strong> ${input.inquiryType || "General Inquiry"}</p>
+                      <div style="padding: 16px; background-color: #f9f9f9; border-radius: 8px; border: 1px solid #e5e5e5;">
+                        <p style="margin: 0 0 8px; font-weight: 700;">Message</p>
+                        <p style="margin: 0; white-space: pre-wrap; line-height: 1.6; color: #444444;">${input.message}</p>
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
+    `,
+  }
+
+  try {
+    await transporter.sendMail(mailOptions)
+    console.log(`Contact form email sent to ${inbox}`)
+  } catch (error) {
+    console.error("Error sending contact form email:", error)
+    throw new Error("Failed to send contact message")
   }
 }

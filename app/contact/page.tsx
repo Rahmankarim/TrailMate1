@@ -50,23 +50,62 @@ const inquiryTypes = [
 export default function ContactPage() {
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [inquiryType, setInquiryType] = useState("general-inquiry")
+  const [submitError, setSubmitError] = useState("")
+  const heroBackground = "/islamabad-pakistan-map.jpg"
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
-    // Simulate form submission
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    setIsSubmitting(false)
-    setIsSubmitted(true)
+
+    const form = e.currentTarget as HTMLFormElement
+    const formData = new FormData(form)
+
+    try {
+      setSubmitError("")
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          firstName: String(formData.get("firstName") || ""),
+          lastName: String(formData.get("lastName") || ""),
+          email: String(formData.get("email") || ""),
+          phone: String(formData.get("phone") || ""),
+          inquiryType,
+          message: String(formData.get("message") || ""),
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Failed to send message")
+      }
+
+      form.reset()
+      setInquiryType("general-inquiry")
+      setIsSubmitted(true)
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Failed to send message")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="pt-24 pb-12 px-6 bg-secondary">
-        <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4 text-balance">Get In Touch</h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto text-pretty">
+      <section className="relative overflow-hidden pt-24 pb-12 px-6">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${heroBackground})` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-foreground/85 via-foreground/60 to-foreground/25" />
+        <div className="relative max-w-7xl mx-auto text-center">
+          <h1 className="text-4xl md:text-5xl font-bold text-background mb-4 text-balance">Get In Touch</h1>
+          <p className="text-xl text-background/85 max-w-2xl mx-auto text-pretty">
             Have a question or want to plan your next adventure? We're here to help you every step of the way.
           </p>
         </div>
@@ -124,24 +163,24 @@ export default function ContactPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="firstName">First Name</Label>
-                          <Input id="firstName" placeholder="John" required />
+                          <Input id="firstName" name="firstName" placeholder="John" required />
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="lastName">Last Name</Label>
-                          <Input id="lastName" placeholder="Doe" required />
+                          <Input id="lastName" name="lastName" placeholder="Doe" required />
                         </div>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="email">Email Address</Label>
-                        <Input id="email" type="email" placeholder="john@example.com" required />
+                        <Input id="email" name="email" type="email" placeholder="john@example.com" required />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="phone">Phone Number (Optional)</Label>
-                        <Input id="phone" type="tel" placeholder="+92 300 1234567" />
+                        <Input id="phone" name="phone" type="tel" placeholder="+92 300 1234567" />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="inquiryType">Inquiry Type</Label>
-                        <Select>
+                        <Select value={inquiryType} onValueChange={setInquiryType}>
                           <SelectTrigger>
                             <SelectValue placeholder="Select inquiry type" />
                           </SelectTrigger>
@@ -153,17 +192,22 @@ export default function ContactPage() {
                             ))}
                           </SelectContent>
                         </Select>
+                        <input type="hidden" name="inquiryType" value={inquiryType} />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="message">Your Message</Label>
                         <Textarea
                           id="message"
+                          name="message"
                           placeholder="Tell us about your inquiry..."
                           rows={5}
                           required
                           className="resize-none"
                         />
                       </div>
+                      {submitError && (
+                        <p className="text-sm text-destructive">{submitError}</p>
+                      )}
                       <Button
                         type="submit"
                         className="w-full bg-foreground text-background hover:bg-foreground/90 h-12"
